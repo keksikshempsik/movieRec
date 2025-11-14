@@ -30,14 +30,13 @@
             <Setter Property="FontSize" Value="14"/>
         </Style>
 
-        <!-- ЗАМЕНИТЕ GenreChipStyle на этот вариант -->
         <Style x:Key="GenreChipStyle" TargetType="Border">
             <Setter Property="Background" Value="#4a4a8a"/>
             <Setter Property="Padding" Value="8,4"/>
             <Setter Property="Margin" Value="0,0,8,8"/>
         </Style>
 
-        <!-- ЗАМЕНИТЕ ModernButtonStyle на этот вариант -->
+        <!-- ModernButtonStyle -->
         <Style x:Key="ModernButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#E0E0E0"/>
@@ -46,6 +45,7 @@
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="15,8"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -64,6 +64,22 @@
                     <Setter Property="Background" Value="#4a4a8a"/>
                     <Setter Property="Foreground" Value="White"/>
                 </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.6"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Стиль для кнопки перевода -->
+        <Style x:Key="TranslateButtonStyle" TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="15,8"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource GoldGradientBrush}"/>
+                    <Setter Property="Foreground" Value="#1a1a2e"/>
+                </Trigger>
             </Style.Triggers>
         </Style>
     </Page.Resources>
@@ -74,138 +90,130 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0">
         <Grid Margin="20">
-            <!-- Основной контент -->
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="300"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="300"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-                <!-- Заголовок и кнопка назад -->
-                <Grid Grid.Row="0" Margin="0,0,0,30">
-                    <Button x:Name="BackButton" Content="← Назад к поиску" 
-                            Click="BackButton_Click"
-                            Style="{StaticResource ModernButtonStyle}"
-                            HorizontalAlignment="Left"
-                            Padding="15,8"/>
+            <!-- Заголовок и кнопка назад -->
+            <Grid Grid.Row="0" Margin="0,0,0,30">
+                <Button x:Name="BackButton" Content="← Назад к поиску" 
+                        Click="BackButton_Click"
+                        Style="{StaticResource ModernButtonStyle}"
+                        HorizontalAlignment="Left"
+                        Padding="15,8"/>
 
-                    <TextBlock Text="ДЕТАЛИ ФИЛЬМА" 
+                <TextBlock Text="ДЕТАЛИ ФИЛЬМА" 
+                           Style="{StaticResource TitleTextStyle}"
+                           FontSize="28"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+            </Grid>
+
+            <!-- Основная информация о фильме -->
+            <Grid Grid.Row="1" Margin="0,0,0,30">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Постер -->
+                <Border Grid.Column="0" 
+                        Background="#2a2a4a" 
+                        BorderBrush="{StaticResource GoldGradientBrush}" 
+                        BorderThickness="2"
+                        Margin="0,0,30,0">
+                    <Image x:Name="MoviePoster" 
+                           Stretch="Uniform"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Width="180" 
+                           Height="270"/>
+                </Border>
+
+                <!-- Основные детали -->
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <!-- Название -->
+                    <TextBlock x:Name="MovieTitle" 
                                Style="{StaticResource TitleTextStyle}"
-                               FontSize="28"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"/>
-                </Grid>
-
-                <!-- Основная информация о фильме -->
-                <Grid Grid.Row="1" Margin="0,0,0,30">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="200"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <!-- Постер - УБРАЛ CornerRadius -->
-                    <Border Grid.Column="0" 
-                            Background="#2a2a4a" 
-                            BorderBrush="{StaticResource GoldGradientBrush}" 
-                            BorderThickness="2"
-                            Margin="0,0,30,0">
-                        <Image x:Name="MoviePoster" 
-                               Source="{Binding Poster}" 
-                               Stretch="Uniform"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"
-                               Width="180" 
-                               Height="270"/>
-                    </Border>
-
-                    <!-- Основные детали -->
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <!-- Название -->
-                        <TextBlock x:Name="MovieTitle" 
-                                   Text="{Binding Title}"
-                                   Style="{StaticResource TitleTextStyle}"
-                                   FontSize="32"
-                                   Margin="0,0,0,15"/>
-
-                        <!-- Год и рейтинг -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
-                            <!-- УБРАЛ CornerRadius -->
-                            <Border Background="#4a4a8a" Padding="10,5">
-                                <TextBlock Text="{Binding Year}" 
-                                           Foreground="White" 
-                                           FontWeight="SemiBold"/>
-                            </Border>
-
-                            <!-- УБРАЛ CornerRadius -->
-                            <Border Background="{StaticResource GoldGradientBrush}" 
-                                    Padding="10,5" 
-                                    Margin="10,0,0,0">
-                                <TextBlock Text="{Binding Rating, StringFormat={}{0}/10}" 
-                                           Foreground="#1a1a2e" 
-                                           FontWeight="Bold"/>
-                            </Border>
-                        </StackPanel>
-
-                        <!-- Жанры -->
-                        <StackPanel Margin="0,0,0,20">
-                            <TextBlock Text="ЖАНРЫ" 
-                                       Style="{StaticResource TitleTextStyle}"
-                                       FontSize="16"
-                                       Margin="0,0,0,8"/>
-
-                            <ItemsControl x:Name="GenresList" ItemsSource="{Binding Genres}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel Orientation="Horizontal"/>
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Style="{StaticResource GenreChipStyle}">
-                                            <TextBlock Text="{Binding}" 
-                                                       Foreground="White" 
-                                                       FontSize="12"
-                                                       FontWeight="SemiBold"/>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </StackPanel>
-                </Grid>
-
-                <!-- Разделитель -->
-                <Rectangle Grid.Row="2" 
-                           Fill="{StaticResource GoldGradientBrush}" 
-                           Height="2" 
-                           Margin="0,0,0,30"
-                           Opacity="0.6"/>
-
-                <!-- Описание -->
-                <StackPanel Grid.Row="3">
-                    <TextBlock Text="ОПИСАНИЕ" 
-                               Style="{StaticResource TitleTextStyle}"
-                               FontSize="20"
+                               FontSize="32"
                                Margin="0,0,0,15"/>
 
-                    <!-- УБРАЛ CornerRadius -->
-                    <Border Background="#2a2a4a" 
-                            Padding="20" 
-                            BorderBrush="#4a4a8a" 
-                            BorderThickness="1">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="200">
-                            <TextBlock x:Name="MovieDescription" 
-                                       Text="{Binding Description}"
-                                       Style="{StaticResource ContentTextStyle}"
-                                       FontSize="15"
-                                       LineHeight="22"
-                                       TextAlignment="Justify"/>
-                        </ScrollViewer>
-                    </Border>
+                    <!-- Год и кнопка перевода -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                        <!-- Год -->
+                        <Border Background="#4a4a8a" Padding="10,5">
+                            <TextBlock x:Name="MovieYear"
+                                       Foreground="White" 
+                                       FontWeight="SemiBold"/>
+                        </Border>
+
+                        <!-- Кнопка перевода -->
+                        <Button x:Name="TranslateButton"
+                                Content="🌐 Перевести описание"
+                                Click="TranslateButton_Click"
+                                Style="{StaticResource TranslateButtonStyle}"
+                                Margin="10,0,0,0"
+                                ToolTip="Перевести описание фильма на русский язык"/>
+                    </StackPanel>
+
+                    <!-- Жанры -->
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock Text="ЖАНРЫ" 
+                                   Style="{StaticResource TitleTextStyle}"
+                                   FontSize="16"
+                                   Margin="0,0,0,8"/>
+
+                        <ItemsControl x:Name="GenresList">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource GenreChipStyle}">
+                                        <TextBlock Text="{Binding}" 
+                                                   Foreground="White" 
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"/>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
                 </StackPanel>
             </Grid>
+
+            <!-- Разделитель -->
+            <Rectangle Grid.Row="2" 
+                       Fill="{StaticResource GoldGradientBrush}" 
+                       Height="2" 
+                       Margin="0,0,0,30"
+                       Opacity="0.6"/>
+
+            <!-- Описание -->
+            <StackPanel Grid.Row="3">
+                <TextBlock Text="ОПИСАНИЕ" 
+                           Style="{StaticResource TitleTextStyle}"
+                           FontSize="20"
+                           Margin="0,0,0,15"/>
+
+                <Border Background="#2a2a4a" 
+                        Padding="20" 
+                        BorderBrush="#4a4a8a" 
+                        BorderThickness="1">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="200">
+                        <TextBlock x:Name="MovieDescription" 
+                                   Style="{StaticResource ContentTextStyle}"
+                                   FontSize="15"
+                                   LineHeight="22"
+                                   TextAlignment="Justify"/>
+                    </ScrollViewer>
+                </Border>
+            </StackPanel>
         </Grid>
     </ScrollViewer>
 </Page>
