@@ -22,6 +22,7 @@ namespace MovieRecV5
             _databaseService = new DatabaseService();
             _databaseService.InitializeDatabase();
             _throttler = new SemaphoreSlim(3, 3);
+            Console.WriteLine("qwe");
         }
 
         private async void SearchButton_Click(object sender, RoutedEventArgs e)
