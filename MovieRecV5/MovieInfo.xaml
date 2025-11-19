@@ -1,219 +1,95 @@
 ﻿<Page x:Class="MovieRecV5.MovieInfo"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      Title="Детали фильма">
+      Title="Информация о фильме">
 
-    <Page.Resources>
-        <LinearGradientBrush x:Key="BackgroundGradient" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#1a1a2e" Offset="0"/>
-            <GradientStop Color="#16213e" Offset="0.5"/>
-            <GradientStop Color="#0f3460" Offset="1"/>
-        </LinearGradientBrush>
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-        <LinearGradientBrush x:Key="GoldGradientBrush" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#FFD700" Offset="0"/>
-            <GradientStop Color="#FFEC8B" Offset="0.5"/>
-            <GradientStop Color="#DAA520" Offset="1"/>
-        </LinearGradientBrush>
+        <!-- Заголовок и кнопка назад -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+            <Button x:Name="BackButton" 
+                    Content="Назад" 
+                    Click="BackButton_Click"
+                    Width="80"
+                    Height="25"/>
 
-        <Style x:Key="TitleTextStyle" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontFamily" Value="Segoe UI"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="TextWrapping" Value="Wrap"/>
-        </Style>
+            <TextBlock Text="Информация о фильме" 
+                       FontSize="16" 
+                       FontWeight="Bold" 
+                       VerticalAlignment="Center"
+                       Margin="10,0,0,0"/>
+        </StackPanel>
 
-        <Style x:Key="ContentTextStyle" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#E0E0E0"/>
-            <Setter Property="FontFamily" Value="Segoe UI"/>
-            <Setter Property="TextWrapping" Value="Wrap"/>
-            <Setter Property="FontSize" Value="14"/>
-        </Style>
+        <!-- Основная информация -->
+        <Grid Grid.Row="1" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-        <Style x:Key="GenreChipStyle" TargetType="Border">
-            <Setter Property="Background" Value="#4a4a8a"/>
-            <Setter Property="Padding" Value="8,4"/>
-            <Setter Property="Margin" Value="0,0,8,8"/>
-        </Style>
+            <!-- Постер -->
+            <Image x:Name="MoviePoster" 
+                   Grid.Column="0"
+                   Width="150" 
+                   Height="200"
+                   Margin="0,0,10,0"/>
 
-        <!-- ModernButtonStyle -->
-        <Style x:Key="ModernButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#E0E0E0"/>
-            <Setter Property="BorderBrush" Value="{StaticResource GoldGradientBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="FontFamily" Value="Segoe UI"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Padding" Value="15,8"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}">
-                            <ContentPresenter HorizontalAlignment="Center" 
-                                              VerticalAlignment="Center"
-                                              Margin="{TemplateBinding Padding}"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#4a4a8a"/>
-                    <Setter Property="Foreground" Value="White"/>
-                </Trigger>
-                <Trigger Property="IsEnabled" Value="False">
-                    <Setter Property="Opacity" Value="0.6"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
+            <!-- Информация справа -->
+            <StackPanel Grid.Column="1">
+                <TextBlock x:Name="MovieTitle" 
+                           FontSize="14" 
+                           FontWeight="Bold" 
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,5"/>
 
-        <!-- Стиль для кнопки перевода -->
-        <Style x:Key="TranslateButtonStyle" TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="15,8"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="{StaticResource GoldGradientBrush}"/>
-                    <Setter Property="Foreground" Value="#1a1a2e"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-    </Page.Resources>
+                <TextBlock x:Name="MovieYear" 
+                           FontSize="12" 
+                           Margin="0,0,0,10"/>
 
-    <Page.Background>
-        <StaticResource ResourceKey="BackgroundGradient"/>
-    </Page.Background>
+                <Button x:Name="TranslateButton"
+                        Content="Перевести описание"
+                        Click="TranslateButton_Click"
+                        Width="150"
+                        Height="25"
+                        Margin="0,0,0,10"/>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0">
-        <Grid Margin="20">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="300"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
+                <TextBlock Text="Жанры:" 
+                           FontWeight="Bold" 
+                           Margin="0,0,0,5"/>
 
-            <!-- Заголовок и кнопка назад -->
-            <Grid Grid.Row="0" Margin="0,0,0,30">
-                <Button x:Name="BackButton" Content="← Назад к поиску" 
-                        Click="BackButton_Click"
-                        Style="{StaticResource ModernButtonStyle}"
-                        HorizontalAlignment="Left"
-                        Padding="15,8"/>
-
-                <TextBlock Text="ДЕТАЛИ ФИЛЬМА" 
-                           Style="{StaticResource TitleTextStyle}"
-                           FontSize="28"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"/>
-            </Grid>
-
-            <!-- Основная информация о фильме -->
-            <Grid Grid.Row="1" Margin="0,0,0,30">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="200"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
-                <!-- Постер -->
-                <Border Grid.Column="0" 
-                        Background="#2a2a4a" 
-                        BorderBrush="{StaticResource GoldGradientBrush}" 
-                        BorderThickness="2"
-                        Margin="0,0,30,0">
-                    <Image x:Name="MoviePoster" 
-                           Stretch="Uniform"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           Width="180" 
-                           Height="270"/>
-                </Border>
-
-                <!-- Основные детали -->
-                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <!-- Название -->
-                    <TextBlock x:Name="MovieTitle" 
-                               Style="{StaticResource TitleTextStyle}"
-                               FontSize="32"
-                               Margin="0,0,0,15"/>
-
-                    <!-- Год и кнопка перевода -->
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
-                        <!-- Год -->
-                        <Border Background="#4a4a8a" Padding="10,5">
-                            <TextBlock x:Name="MovieYear"
-                                       Foreground="White" 
-                                       FontWeight="SemiBold"/>
-                        </Border>
-
-                        <!-- Кнопка перевода -->
-                        <Button x:Name="TranslateButton"
-                                Content="🌐 Перевести описание"
-                                Click="TranslateButton_Click"
-                                Style="{StaticResource TranslateButtonStyle}"
-                                Margin="10,0,0,0"
-                                ToolTip="Перевести описание фильма на русский язык"/>
-                    </StackPanel>
-
-                    <!-- Жанры -->
-                    <StackPanel Margin="0,0,0,20">
-                        <TextBlock Text="ЖАНРЫ" 
-                                   Style="{StaticResource TitleTextStyle}"
-                                   FontSize="16"
-                                   Margin="0,0,0,8"/>
-
-                        <ItemsControl x:Name="GenresList">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel Orientation="Horizontal"/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Style="{StaticResource GenreChipStyle}">
-                                        <TextBlock Text="{Binding}" 
-                                                   Foreground="White" 
-                                                   FontSize="12"
-                                                   FontWeight="SemiBold"/>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-                </StackPanel>
-            </Grid>
-
-            <!-- Разделитель -->
-            <Rectangle Grid.Row="2" 
-                       Fill="{StaticResource GoldGradientBrush}" 
-                       Height="2" 
-                       Margin="0,0,0,30"
-                       Opacity="0.6"/>
-
-            <!-- Описание -->
-            <StackPanel Grid.Row="3">
-                <TextBlock Text="ОПИСАНИЕ" 
-                           Style="{StaticResource TitleTextStyle}"
-                           FontSize="20"
-                           Margin="0,0,0,15"/>
-
-                <Border Background="#2a2a4a" 
-                        Padding="20" 
-                        BorderBrush="#4a4a8a" 
-                        BorderThickness="1">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="200">
-                        <TextBlock x:Name="MovieDescription" 
-                                   Style="{StaticResource ContentTextStyle}"
-                                   FontSize="15"
-                                   LineHeight="22"
-                                   TextAlignment="Justify"/>
-                    </ScrollViewer>
-                </Border>
+                <ItemsControl x:Name="GenresList">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" 
+                                       Margin="0,0,5,0"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </StackPanel>
         </Grid>
-    </ScrollViewer>
+
+        <!-- Описание -->
+        <StackPanel Grid.Row="2">
+            <TextBlock Text="Описание:" 
+                       FontWeight="Bold" 
+                       Margin="0,0,0,5"/>
+
+            <TextBox x:Name="MovieDescription" 
+                     TextWrapping="Wrap" 
+                     FontSize="12"
+                     Height="200"
+                     IsReadOnly="True"
+                     VerticalScrollBarVisibility="Auto"/>
+        </StackPanel>
+    </Grid>
 </Page>
