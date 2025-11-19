@@ -22,6 +22,8 @@ namespace MovieRecV5
             _databaseService = new DatabaseService();
             _databaseService.InitializeDatabase();
             _throttler = new SemaphoreSlim(3, 3);
+
+            SearchTextBox.KeyDown += SearchTextBox_KeyDown;
         }
 
         private async void SearchButton_Click(object sender, RoutedEventArgs e)
@@ -349,6 +351,14 @@ namespace MovieRecV5
         {
             SearchProgressBar.IsIndeterminate = isProgress;
             SearchButton.IsEnabled = !isProgress;
+        }
+
+        private void SearchTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                SearchButton_Click(sender, e);
+            }
         }
     }
 }

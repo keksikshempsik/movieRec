@@ -7,7 +7,20 @@
         mc:Ignorable="d"
         Title="Movie Search" Height="600" Width="900">
     <Grid>
-        <TextBox Name="SearchTextBox" HorizontalAlignment="Left" Margin="10,10,0,0" TextWrapping="Wrap" Text="Введите название..." VerticalAlignment="Top" Width="160" Height="29" Foreground="Gray" FontSize="16" GotFocus="SearchTextBox_GotFocus" LostFocus="SearchTextBox_LostFocus"/>
+        <TextBox Name="SearchTextBox" 
+                 HorizontalAlignment="Left" 
+                 Margin="10,10,0,0" 
+                 TextWrapping="Wrap" 
+                 Text="Введите название..." 
+                 VerticalAlignment="Top" 
+                 Width="160" 
+                 Height="29" 
+                 Foreground="Gray" 
+                 FontSize="16" 
+                 GotFocus="SearchTextBox_GotFocus" 
+                 LostFocus="SearchTextBox_LostFocus"
+                 KeyDown="SearchTextBox_KeyDown"/>
+        <!-- ДОБАВЬТЕ ЭТУ СТРОКУ -->
         <Button Name="SearchButton" Content="Поиск" HorizontalAlignment="Left" Margin="190,10,0,0" VerticalAlignment="Top" Width="70" Height="29" FontSize="16" Click="SearchButton_Click"/>
         <ProgressBar Name="SearchProgressBar" HorizontalAlignment="Left" Height="20" Margin="650,17,0,0" VerticalAlignment="Top" Width="120" IsIndeterminate="False" />
 
