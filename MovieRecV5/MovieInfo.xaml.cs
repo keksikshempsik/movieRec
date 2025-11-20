@@ -36,6 +36,7 @@ namespace MovieRecV5
             MovieTitle.Text = movie.Title;
             MovieDescription.Text = movie.Description;
             MovieYear.Text = movie.Year.ToString();
+            MovieVoteCount.Text = movie.FormatVoteCount(movie.VoteCount);
 
             // Устанавливаем постер
             if (!string.IsNullOrEmpty(movie.Poster))

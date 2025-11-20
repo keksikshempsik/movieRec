@@ -192,6 +192,8 @@ namespace MovieRecV5
                 poster64 = await posterService.DownloadPosterAsBase64(poster);
             }
 
+            var voteCount = await GetVoteCountFromTMDB(title, year);
+
             return new Movie
             {
                 Title = title ?? filmSlug.Replace("-", " "),
@@ -201,7 +203,8 @@ namespace MovieRecV5
                 PosterUrl = poster,
                 LetterBoxdUrl = $"https://letterboxd.com/film/{filmSlug}/",
                 Poster = poster64,
-                Genres = genres
+                Genres = genres,
+                VoteCount = voteCount
             };
         }
 
@@ -234,6 +237,42 @@ namespace MovieRecV5
             {
                 MessageBox.Show($"TMDB error: {ex.Message}");
                 return null;
+            }
+        }
+
+        private async Task<int> GetVoteCountFromTMDB(string title, int year)
+        {
+            try
+            {
+                string apiKey = "2270bb1505a8b2cd2f6e409310da706c";
+                string searchUrl = $"https://api.themoviedb.org/3/search/movie?api_key={apiKey}&query={WebUtility.UrlEncode(title)}&year={year}";
+
+                var response = await _httpClient.GetStringAsync(searchUrl);
+
+                // Используем JsonDocument для парсинга JSON
+                using (var jsonDoc = JsonDocument.Parse(response))
+                {
+                    var results = jsonDoc.RootElement.GetProperty("results");
+
+                    if (results.GetArrayLength() > 0)
+                    {
+                        var firstResult = results[0];
+
+                        // Получаем vote_count из первого результата
+                        if (firstResult.TryGetProperty("vote_count", out var voteCountElement) &&
+                            voteCountElement.ValueKind == JsonValueKind.Number)
+                        {
+                            return voteCountElement.GetInt32();
+                        }
+                    }
+                }
+
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"TMDB error: {ex.Message}");
+                return 0;
             }
         }
 

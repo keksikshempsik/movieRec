@@ -49,7 +49,14 @@
 
                 <TextBlock x:Name="MovieYear" 
                            FontSize="12" 
-                           Margin="0,0,0,10"/>
+                           Margin="0,0,0,5"/>
+
+                <!-- ДОБАВЛЕННЫЙ ТЕКСТБЛОК ДЛЯ КОЛИЧЕСТВА ПРОСМОТРОВ -->
+                <TextBlock x:Name="MovieVoteCount"
+                           FontSize="12"
+                           Foreground="Gray"
+                           Margin="0,0,0,10"
+                           Text="Загрузка..."/>
 
                 <Button x:Name="TranslateButton"
                         Content="Перевести описание"
