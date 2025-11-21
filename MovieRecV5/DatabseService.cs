@@ -55,6 +55,7 @@ namespace MovieRecV5
             }
         }
 
+        //ФИЛЬМЫ
         public void AddMovie(Movie movie)
         {
             using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
@@ -110,7 +111,6 @@ namespace MovieRecV5
             OR Title LIKE $titlePattern
             ORDER BY Year DESC";
 
-                // Ищем все варианты: the-avengers, the-avengers-2012, the-avengers-1998 и т.д.
                 var baseSlug = ConvertToSlug(searchTitle);
                 command.Parameters.AddWithValue("$searchPattern", $"{baseSlug}%");
                 command.Parameters.AddWithValue("$titlePattern", $"%{searchTitle}%");
@@ -162,7 +162,6 @@ namespace MovieRecV5
             return movies;
         }
 
-        // ДОБАВЛЕННЫЙ МЕТОД
         private Movie CreateMovieFromReader(SQLiteDataReader reader)
         {
             var movie = new Movie
@@ -198,7 +197,6 @@ namespace MovieRecV5
             return movie;
         }
 
-        // ДОБАВЛЕННЫЙ МЕТОД: Поиск точного slug через TMDB
         public async Task<string> FindExactSlug(string title, int? year = null)
         {
             try
@@ -236,7 +234,6 @@ namespace MovieRecV5
             return ConvertToSlug(title);
         }
 
-        // Вспомогательный метод для конвертации в slug
         private string ConvertToSlug(string title)
         {
             if (string.IsNullOrEmpty(title))
@@ -269,7 +266,6 @@ namespace MovieRecV5
             return slug;
         }
 
-        // ДОБАВЬТЕ в DatabaseService
         public List<Movie> SearchAllMovieVariants(string searchTitle)
         {
             var movies = new List<Movie>();
@@ -297,6 +293,100 @@ namespace MovieRecV5
                 }
             }
             return movies;
+        }
+
+        //ПОЛЬЗОВАТЕЛИ
+        public bool AddUser(User user)
+        {
+            try
+            {
+                using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+                {
+                    connection.Open();
+
+                    var command = connection.CreateCommand();
+                    command.CommandText = "INSERT INTO Users (Login, Email, Password) VALUES ($login, $email, $password)";
+                    command.Parameters.AddWithValue("$login", user.Login);
+                    command.Parameters.AddWithValue("$email", user.Email);
+                    command.Parameters.AddWithValue("$password", user.Password);
+
+                    return command.ExecuteNonQuery() > 0;
+                }
+            }
+            catch (SQLiteException ex) when (ex.Message.Contains("UNIQUE constraint failed"))
+            {
+                return false;
+            }
+        }
+
+        public bool UserExistsByLogin(string login)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = "SELECT COUNT(*) FROM Users WHERE Login = $login";
+                command.Parameters.AddWithValue("$login", login);
+
+                var count = Convert.ToInt32(command.ExecuteScalar());
+                return count > 0;
+            }
+        }
+
+        public User GetUserByLogin(string login)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = "SELECT * FROM Users WHERE Login = $login";
+                command.Parameters.AddWithValue("$login", login);
+
+                using (var reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return new User
+                        {
+                            Id = Convert.ToInt32(reader["Id"]),
+                            Login = reader["Login"]?.ToString() ?? "",
+                            Email = reader["Email"]?.ToString() ?? "",
+                            Password = reader["Password"]?.ToString() ?? ""
+                        };
+                    }
+                }
+            }
+            return null;
+        }
+
+        public User FindUser(string login, string password)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = "SELECT * FROM Users WHERE Login = $login AND Password = $password";
+                command.Parameters.AddWithValue("$login", login);
+                command.Parameters.AddWithValue("$password", password);
+
+                using (var reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return new User
+                        {
+                            Id = Convert.ToInt32(reader["Id"]),
+                            Login = reader["Login"]?.ToString() ?? "",
+                            Email = reader["Email"]?.ToString() ?? "",
+                            Password = reader["Password"]?.ToString() ?? ""
+                        };
+                    }
+                }
+            }
+            return null;
         }
     }
 }

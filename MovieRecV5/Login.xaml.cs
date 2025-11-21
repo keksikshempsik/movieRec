@@ -11,6 +11,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using System.Text.RegularExpressions;
 
 namespace MovieRecV5
 {
@@ -19,10 +20,17 @@ namespace MovieRecV5
     /// </summary>
     public partial class Login : Window
     {
+        private DatabaseService databaseService;
+
+        // Регулярное выражение для проверки email
+        private Regex emailRegex = new Regex(
+            @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
         public Login()
         {
             InitializeComponent();
-
+            databaseService = new DatabaseService();
             // Подписываемся на события изменения состояния RadioButton
             rbLogin.Checked += RbAuthMode_Checked;
             rbRegister.Checked += RbAuthMode_Checked;
@@ -32,29 +40,120 @@ namespace MovieRecV5
         {
             if (rbLogin.IsChecked == true)
             {
-                // Режим входа
                 pnlRegister.Visibility = Visibility.Collapsed;
                 btnSubmit.Content = "Войти";
                 Title = "Вход в систему";
 
-                // Уменьшаем размер окна для режима входа
                 this.Height = 275;
             }
             else if (rbRegister.IsChecked == true)
             {
-                // Режим регистрации
                 pnlRegister.Visibility = Visibility.Visible;
                 btnSubmit.Content = "Зарегистрироваться";
                 Title = "Регистрация";
 
-                // Увеличиваем размер окна для режима регистрации
                 this.Height = 325;
             }
         }
 
+        private bool IsValidEmail(string email)
+        {
+            return !string.IsNullOrWhiteSpace(email) && emailRegex.IsMatch(email);
+        }
+
         private void BtnSubmit_Click(object sender, RoutedEventArgs e)
         {
-            // Логика для кнопки (оставлю пустой, как просили)
+            try
+            {
+                if (btnSubmit.Content == "Войти")
+                {
+                    if (string.IsNullOrWhiteSpace(txtLogin.Text))
+                    {
+                        throw new Exception("Введите логин");
+                    }
+
+                    if (string.IsNullOrWhiteSpace(txtPassword.Password))
+                    {
+                        throw new Exception("Введите пароль");
+                    }
+
+                    if (databaseService.UserExistsByLogin(txtLogin.Text))
+                    {
+                        var user = databaseService.GetUserByLogin(txtLogin.Text);
+                        if (user.Password == User.HashPassword(txtPassword.Password))
+                        {
+                            MessageBox.Show("Вы вошли в аккаунт");
+                            // Здесь можно добавить переход на главное окно
+                        }
+                        else
+                        {
+                            throw new Exception("Неверный пароль");
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception("Пользователь с таким логином не существует");
+                    }
+                }
+                else if (btnSubmit.Content == "Зарегистрироваться")
+                {
+                    // Проверка логина
+                    if (string.IsNullOrWhiteSpace(txtLogin.Text))
+                    {
+                        throw new Exception("Введите логин");
+                    }
+
+                    // Проверка email
+                    if (string.IsNullOrWhiteSpace(txtEmail.Text))
+                    {
+                        throw new Exception("Введите email");
+                    }
+
+                    if (!IsValidEmail(txtEmail.Text))
+                    {
+                        throw new Exception("Введите корректный email адрес");
+                    }
+
+                    // Проверка пароля
+                    if (string.IsNullOrWhiteSpace(txtPassword.Password))
+                    {
+                        throw new Exception("Введите пароль");
+                    }
+
+                    if (txtPassword.Password.Length < 6)
+                    {
+                        throw new Exception("Пароль должен содержать минимум 6 символов");
+                    }
+
+                    if (databaseService.UserExistsByLogin(txtLogin.Text))
+                    {
+                        throw new Exception("Пользователь с таким логином уже существует");
+                    }
+
+                    // Создаем и добавляем пользователя
+                    var user = new User
+                    {
+                        Login = txtLogin.Text.Trim(),
+                        Password = User.HashPassword(txtPassword.Password),
+                        Email = txtEmail.Text.Trim()
+                    };
+
+                    if (databaseService.AddUser(user))
+                    {
+                        MessageBox.Show("Регистрация успешна! Теперь вы можете войти.");
+                        // Переключаем на форму входа
+                        rbLogin.IsChecked = true;
+                    }
+                    else
+                    {
+                        throw new Exception("Ошибка при регистрации пользователя");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
         }
     }
 }
