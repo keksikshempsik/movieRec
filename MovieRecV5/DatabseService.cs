@@ -43,6 +43,15 @@ namespace MovieRecV5
                 )";
 
                 createTableCommand.ExecuteNonQuery();
+
+                createTableCommand.CommandText = @"
+                CREATE TABLE IF NOT EXISTS Users (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Login TEXT NOT NULL,
+                    Email TEXT NOT NULL,
+                    Password TEXT NOT NULL)";
+
+                createTableCommand.ExecuteNonQuery();
             }
         }
 

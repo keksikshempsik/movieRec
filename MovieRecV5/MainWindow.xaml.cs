@@ -360,5 +360,11 @@ namespace MovieRecV5
                 SearchButton_Click(sender, e);
             }
         }
+
+        private void LoginButton_Click(object sender, RoutedEventArgs e)
+        {
+            var loginPage = new Login();
+            loginPage.ShowDialog();
+        }
     }
 }
