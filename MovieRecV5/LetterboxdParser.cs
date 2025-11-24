@@ -193,6 +193,7 @@ namespace MovieRecV5
             }
 
             var voteCount = await GetVoteCountFromTMDB(title, year);
+            var rating = await GetRatingFromTMDB(title, year);
 
             return new Movie
             {
@@ -204,7 +205,8 @@ namespace MovieRecV5
                 LetterBoxdUrl = $"https://letterboxd.com/film/{filmSlug}/",
                 Poster = poster64,
                 Genres = genres,
-                VoteCount = voteCount
+                VoteCount = voteCount,
+                Rating = rating,
             };
         }
 
@@ -273,6 +275,41 @@ namespace MovieRecV5
             {
                 MessageBox.Show($"TMDB error: {ex.Message}");
                 return 0;
+            }
+        }
+
+        private async Task<float> GetRatingFromTMDB(string title, int year)
+        {
+            try
+            {
+                string apiKey = "2270bb1505a8b2cd2f6e409310da706c";
+                string searchUrl = $"https://api.themoviedb.org/3/search/movie?api_key={apiKey}&query={WebUtility.UrlEncode(title)}&year={year}";
+
+                var response = await _httpClient.GetStringAsync(searchUrl);
+
+                using (var jsonDoc = JsonDocument.Parse(response))
+                {
+                    var results = jsonDoc.RootElement.GetProperty("results");
+
+                    if (results.GetArrayLength() > 0)
+                    {
+                        var firstResult = results[0];
+
+                        if (firstResult.TryGetProperty("vote_average", out var voteAverageElement) &&
+                            voteAverageElement.ValueKind == JsonValueKind.Number)
+                        {
+                            return voteAverageElement.GetSingle(); 
+                        }
+                    }
+                }
+
+                return 0f; 
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                return 0f;
             }
         }
 

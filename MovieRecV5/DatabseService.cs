@@ -39,7 +39,8 @@ namespace MovieRecV5
                     LetterBoxdUrl TEXT,
                     Poster TEXT,
                     Genres TEXT,
-                    VoteCount INTEGER
+                    VoteCount INTEGER,
+                    Rating Float
                 )";
 
                 createTableCommand.ExecuteNonQuery();
@@ -64,8 +65,8 @@ namespace MovieRecV5
 
                 var addMovieCommand = connection.CreateCommand();
                 addMovieCommand.CommandText = @"
-                    INSERT INTO Movies (Title, Slug, Year, Description, PosterUrl, LetterBoxdUrl, Poster, Genres, VoteCount)
-                    VALUES ($title, $slug, $year, $description, $posterUrl, $letterboxdUrl, $poster, $genres, $voteCount)";
+                    INSERT INTO Movies (Title, Slug, Year, Description, PosterUrl, LetterBoxdUrl, Poster, Genres, VoteCount, Rating)
+                    VALUES ($title, $slug, $year, $description, $posterUrl, $letterboxdUrl, $poster, $genres, $voteCount, $rating)";
 
                 addMovieCommand.Parameters.AddWithValue("$title", movie.Title ?? "");
                 addMovieCommand.Parameters.AddWithValue("$slug", movie.Slug ?? "");
@@ -76,6 +77,7 @@ namespace MovieRecV5
                 addMovieCommand.Parameters.AddWithValue("$poster", movie.Poster ?? "");
                 addMovieCommand.Parameters.AddWithValue("$genres", JsonSerializer.Serialize(movie.Genres ?? new List<string>()));
                 addMovieCommand.Parameters.AddWithValue("$voteCount", movie.VoteCount);
+                addMovieCommand.Parameters.AddWithValue("$rating", movie.Rating);
 
                 addMovieCommand.ExecuteNonQuery();
             }
@@ -174,6 +176,7 @@ namespace MovieRecV5
                 LetterBoxdUrl = reader["LetterBoxdUrl"]?.ToString() ?? "",
                 Poster = reader["Poster"]?.ToString() ?? "",
                 VoteCount = reader["VoteCount"] != DBNull.Value ? Convert.ToInt32(reader["VoteCount"]) : 0,
+                Rating = reader["Rating"] != DBNull.Value ? Convert.ToSingle(reader["Rating"]) : 0f
             };
 
             string genresJson = reader["Genres"]?.ToString();

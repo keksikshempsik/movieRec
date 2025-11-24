@@ -19,6 +19,7 @@ namespace MovieRecV5
         public string LetterBoxdUrl;
         public string Poster;
         public int VoteCount;
+        public float Rating;
         public List<string> Genres { get; set; } = new List<string>();
 
         public string FormatVoteCount(int voteCount)
