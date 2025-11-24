@@ -15,15 +15,76 @@ namespace MovieRecV5
     {
         private DatabaseService _databaseService;
         private readonly SemaphoreSlim _throttler;
+        public bool IsLogged { get; private set; }
+        public User CurrentUser { get; private set; }
 
         public MainWindow()
         {
             InitializeComponent();
+            IsLogged = false;
+            CurrentUser = null;
             _databaseService = new DatabaseService();
             _databaseService.InitializeDatabase();
             _throttler = new SemaphoreSlim(3, 3);
 
             SearchTextBox.KeyDown += SearchTextBox_KeyDown;
+            UpdateUserButton();
+        }
+
+        // Метод для обновления текста кнопки
+        public void UpdateUserButton()
+        {
+            if (IsLogged && CurrentUser != null)
+            {
+                UserProfileButton.Content = "Профиль";
+                UserProfileButton.ToolTip = $"Войти в профиль ({CurrentUser.Login})";
+            }
+            else
+            {
+                UserProfileButton.Content = "Вход/Регистрация";
+                UserProfileButton.ToolTip = "Войти или зарегистрироваться";
+            }
+        }
+
+        // Метод для входа пользователя
+        public void LoginUser(User user)
+        {
+            CurrentUser = user;
+            IsLogged = true;
+            UpdateUserButton();
+        }
+
+        // Метод для выхода пользователя
+        public void LogoutUser()
+        {
+            CurrentUser = null;
+            IsLogged = false;
+            UpdateUserButton();
+        }
+
+        // ОБНОВЛЕННЫЙ ОБРАБОТЧИК КНОПКИ
+        private void UserProfileButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsLogged && CurrentUser != null)
+            {
+                // Показываем окно профиля
+                var profileWindow = new UserProfileWindow(CurrentUser, this)
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                profileWindow.ShowDialog();
+            }
+            else
+            {
+                // Показываем окно входа/регистрации
+                var loginWindow = new Login(this)
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                loginWindow.ShowDialog();
+            }
         }
 
         private async void SearchButton_Click(object sender, RoutedEventArgs e)
@@ -363,7 +424,7 @@ namespace MovieRecV5
 
         private void LoginButton_Click(object sender, RoutedEventArgs e)
         {
-            var loginPage = new Login();
+            var loginPage = new Login(this);
             loginPage.ShowDialog();
         }
     }

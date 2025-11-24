@@ -24,14 +24,14 @@
                  GotFocus="SearchTextBox_GotFocus" 
                  LostFocus="SearchTextBox_LostFocus"
                  KeyDown="SearchTextBox_KeyDown"/>
-        <!-- ДОБАВЬТЕ ЭТУ СТРОКУ -->
         <Button Name="SearchButton" Content="Поиск" HorizontalAlignment="Left" Margin="190,10,0,0" VerticalAlignment="Top" Width="70" Height="29" FontSize="16" Click="SearchButton_Click"/>
         <ProgressBar Name="SearchProgressBar" HorizontalAlignment="Left" Height="20" Margin="630,17,0,0" VerticalAlignment="Top" Width="120" IsIndeterminate="False" />
 
-        <!-- ЗАМЕНИТЕ UniformGrid на WrapPanel -->
         <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="10,50,10,10" Grid.ColumnSpan="2">
             <WrapPanel x:Name="MoviesPanel" HorizontalAlignment="Center"/>
         </ScrollViewer>
-        <Button Name="LoginButton" Content="Вход/Регистрация" HorizontalAlignment="Left" Margin="765,11,0,0" VerticalAlignment="Top" Width="120" Height="29" Click="LoginButton_Click" Grid.ColumnSpan="2"/>
+
+        <!-- ОБНОВЛЕННАЯ КНОПКА -->
+        <Button Name="UserProfileButton" Content="Вход/Регистрация" HorizontalAlignment="Left" Margin="765,11,0,0" VerticalAlignment="Top" Width="120" Height="29" Click="UserProfileButton_Click" Grid.ColumnSpan="2"/>
     </Grid>
 </Window>
