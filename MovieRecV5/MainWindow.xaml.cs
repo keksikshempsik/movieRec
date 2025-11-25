@@ -65,7 +65,7 @@ namespace MovieRecV5
             UpdateUserButton();
         }
 
-        // ОБНОВЛЕННЫЙ ОБРАБОТЧИК КНОПКИ
+        // ОБНОВЛЕННЫЙ ОБРАБОТЧИК КНОПКИ - ТЕПЕРЬ СРАЗУ ОТКРЫВАЕТ ПРОФИЛЬ ПРИ ВХОДЕ
         private void UserProfileButton_Click(object sender, RoutedEventArgs e)
         {
             if (IsLogged && CurrentUser != null)

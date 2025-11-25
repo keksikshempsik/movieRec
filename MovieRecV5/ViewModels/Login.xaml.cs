@@ -90,12 +90,20 @@ namespace MovieRecV5.ViewModels
                 var user = databaseService.GetUserByLogin(txtLogin.Text);
                 if (user.Password == User.HashPassword(txtPassword.Password))
                 {
-                    MessageBox.Show("Вы успешно вошли в аккаунт!", "Успех",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
 
                     // Входим пользователя в главном окне
                     mainWindow.LoginUser(user);
+
+                    // Закрываем окно входа
                     this.Close();
+
+                    // ОТКРЫВАЕМ ПРОФИЛЬ ПОСЛЕ УСПЕШНОГО ВХОДА
+                    var profileWindow = new UserProfileWindow(user, mainWindow)
+                    {
+                        Owner = mainWindow,
+                        WindowStartupLocation = WindowStartupLocation.CenterOwner
+                    };
+                    profileWindow.ShowDialog();
                 }
                 else
                 {
@@ -159,14 +167,30 @@ namespace MovieRecV5.ViewModels
 
             if (databaseService.AddUser(user))
             {
-                MessageBox.Show("Регистрация успешна! Теперь вы можете войти.", "Успех",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                // ПОЛУЧАЕМ ПОЛНОГО ПОЛЬЗОВАТЕЛЯ ИЗ БАЗЫ ДАННЫХ (С ID)
+                var registeredUser = databaseService.GetUserByLogin(user.Login);
 
-                // Переключаем на форму входа
-                rbLogin.IsChecked = true;
+                if (registeredUser != null)
+                {
 
-                // Очищаем поля пароля
-                txtPassword.Password = "";
+                    // АВТОМАТИЧЕСКИ ЛОГИНИМ ПОЛЬЗОВАТЕЛЯ
+                    mainWindow.LoginUser(registeredUser);
+
+                    // Закрываем окно регистрации
+                    this.Close();
+
+                    // СРАЗУ ОТКРЫВАЕМ ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ
+                    var profileWindow = new UserProfileWindow(registeredUser, mainWindow)
+                    {
+                        Owner = mainWindow,
+                        WindowStartupLocation = WindowStartupLocation.CenterOwner
+                    };
+                    profileWindow.ShowDialog();
+                }
+                else
+                {
+                    throw new Exception("Ошибка при получении данных пользователя после регистрации");
+                }
             }
             else
             {
