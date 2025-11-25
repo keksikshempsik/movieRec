@@ -2,8 +2,10 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Text.RegularExpressions;
+using MovieRecV5.Models;
+using MovieRecV5.Services;
 
-namespace MovieRecV5
+namespace MovieRecV5.ViewModels
 {
     public partial class Login : Window
     {

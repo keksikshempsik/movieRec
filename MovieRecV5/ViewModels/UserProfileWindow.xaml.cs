@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Windows;
+using MovieRecV5.Models;
 
-namespace MovieRecV5
+namespace MovieRecV5.ViewModels
 {
     public partial class UserProfileWindow : Window
     {

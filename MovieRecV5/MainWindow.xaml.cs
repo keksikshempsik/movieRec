@@ -8,6 +8,9 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Threading;
+using MovieRecV5.Models;
+using MovieRecV5.Services;
+using MovieRecV5.ViewModels;
 
 namespace MovieRecV5
 {

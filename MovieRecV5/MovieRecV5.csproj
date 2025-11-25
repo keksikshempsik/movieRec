@@ -100,15 +100,15 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Login.xaml.cs">
+    <Compile Include="ViewModels\Login.xaml.cs">
       <DependentUpon>Login.xaml</DependentUpon>
     </Compile>
-    <Compile Include="TranslateService.cs" />
-    <Compile Include="User.cs" />
-    <Compile Include="UserProfileWindow.xaml.cs">
+    <Compile Include="Services\TranslateService.cs" />
+    <Compile Include="Models\User.cs" />
+    <Compile Include="ViewModels\UserProfileWindow.xaml.cs">
       <DependentUpon>UserProfileWindow.xaml</DependentUpon>
     </Compile>
-    <Page Include="Login.xaml">
+    <Page Include="ViewModels\Login.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -120,27 +120,27 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="DatabseService.cs" />
-    <Compile Include="LetterboxdParser.cs" />
+    <Compile Include="Services\DatabseService.cs" />
+    <Compile Include="Services\LetterboxdParser.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="MovieInfo.xaml">
+    <Page Include="ViewModels\MovieInfo.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="UserProfileWindow.xaml">
+    <Page Include="ViewModels\UserProfileWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Movie.cs" />
-    <Compile Include="MovieInfo.xaml.cs">
+    <Compile Include="Models\Movie.cs" />
+    <Compile Include="ViewModels\MovieInfo.xaml.cs">
       <DependentUpon>MovieInfo.xaml</DependentUpon>
     </Compile>
-    <Compile Include="MoviePosterService.cs" />
+    <Compile Include="Services\MoviePosterService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>

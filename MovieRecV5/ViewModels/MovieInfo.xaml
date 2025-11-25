@@ -1,0 +1,110 @@
+﻿<Page x:Class="MovieRecV5.ViewModels.MovieInfo"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Title="Информация о фильме">
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок и кнопка назад -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+            <Button x:Name="BackButton" 
+                    Content="Назад" 
+                    Click="BackButton_Click"
+                    Width="80"
+                    Height="25"/>
+
+            <TextBlock Text="Информация о фильме" 
+                       FontSize="16" 
+                       FontWeight="Bold" 
+                       VerticalAlignment="Center"
+                       Margin="10,0,0,0"/>
+        </StackPanel>
+
+        <!-- Основная информация -->
+        <Grid Grid.Row="1" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Постер -->
+            <Image x:Name="MoviePoster" 
+                   Grid.Column="0"
+                   Width="150" 
+                   Height="200"
+                   Margin="0,0,10,0"/>
+
+            <!-- Информация справа -->
+            <StackPanel Grid.Column="1">
+                <TextBlock x:Name="MovieTitle" 
+                           FontSize="14" 
+                           FontWeight="Bold" 
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,5"/>
+
+                <TextBlock x:Name="MovieYear" 
+                           FontSize="12" 
+                           Margin="0,0,0,5"/>
+
+                <!-- РЕЙТИНГ -->
+                <TextBlock x:Name="MovieRating"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           Foreground="#FFD700"
+                           Margin="0,0,0,5"
+                           Text="Рейтинг: Загрузка..."/>
+
+                <!-- КОЛИЧЕСТВО ПРОСМОТРОВ -->
+                <TextBlock x:Name="MovieVoteCount"
+                           FontSize="12"
+                           Foreground="Gray"
+                           Margin="0,0,0,10"
+                           Text="Загрузка..."/>
+
+                <Button x:Name="TranslateButton"
+                        Content="Перевести описание"
+                        Click="TranslateButton_Click"
+                        Width="150"
+                        Height="25"
+                        Margin="0,0,0,10"/>
+
+                <TextBlock Text="Жанры:" 
+                           FontWeight="Bold" 
+                           Margin="0,0,0,5"/>
+
+                <ItemsControl x:Name="GenresList">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" 
+                                       Margin="0,0,5,0"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Grid>
+
+        <!-- Описание -->
+        <StackPanel Grid.Row="2">
+            <TextBlock Text="Описание:" 
+                       FontWeight="Bold" 
+                       Margin="0,0,0,5"/>
+
+            <TextBox x:Name="MovieDescription" 
+                     TextWrapping="Wrap" 
+                     FontSize="12"
+                     Height="200"
+                     IsReadOnly="True"
+                     VerticalScrollBarVisibility="Auto"/>
+        </StackPanel>
+    </Grid>
+</Page>

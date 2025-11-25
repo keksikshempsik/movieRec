@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MovieRecV5
+namespace MovieRecV5.Models
 {
     public class User
     {
