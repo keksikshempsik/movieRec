@@ -378,7 +378,8 @@ namespace MovieRecV5
 
         private void ShowMovieDetails(Movie movie)
         {
-            var movieInfoPage = new MovieInfo(movie); // Передаем фильм в конструктор
+            // Передаем userId текущего пользователя в MovieInfo
+            var movieInfoPage = new MovieInfo(movie, CurrentUser?.Id ?? 0);
 
             var movieInfoWindow = new Window
             {

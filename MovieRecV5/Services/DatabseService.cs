@@ -40,7 +40,7 @@ namespace MovieRecV5.Services
                     Poster TEXT,
                     Genres TEXT,
                     VoteCount INTEGER,
-                    Rating Float
+                    Rating FLOAT
                 )";
 
                 createTableCommand.ExecuteNonQuery();
@@ -48,15 +48,107 @@ namespace MovieRecV5.Services
                 createTableCommand.CommandText = @"
                 CREATE TABLE IF NOT EXISTS Users (
                     Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    Login TEXT NOT NULL,
-                    Email TEXT NOT NULL,
+                    Login TEXT NOT NULL UNIQUE,
+                    Email TEXT NOT NULL UNIQUE,
                     Password TEXT NOT NULL)";
+
+                createTableCommand.ExecuteNonQuery();
+
+                // Новая таблица для пользовательских оценок
+                createTableCommand.CommandText = @"
+                CREATE TABLE IF NOT EXISTS UserRatings (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    UserId INTEGER NOT NULL,
+                    MovieSlug TEXT NOT NULL,
+                    Rating INTEGER NOT NULL CHECK (Rating >= 1 AND Rating <= 10),
+                    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (UserId) REFERENCES Users (Id),
+                    UNIQUE(UserId, MovieSlug)
+                )";
 
                 createTableCommand.ExecuteNonQuery();
             }
         }
 
-        //ФИЛЬМЫ
+        // МЕТОДЫ ДЛЯ РЕЙТИНГОВ
+        public void SaveUserRating(int userId, string movieSlug, int rating)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = @"
+                    INSERT OR REPLACE INTO UserRatings (UserId, MovieSlug, Rating)
+                    VALUES ($userId, $movieSlug, $rating)";
+
+                command.Parameters.AddWithValue("$userId", userId);
+                command.Parameters.AddWithValue("$movieSlug", movieSlug);
+                command.Parameters.AddWithValue("$rating", rating);
+
+                command.ExecuteNonQuery();
+            }
+        }
+
+        public int? GetUserRating(int userId, string movieSlug)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = @"
+                    SELECT Rating FROM UserRatings 
+                    WHERE UserId = $userId AND MovieSlug = $movieSlug";
+
+                command.Parameters.AddWithValue("$userId", userId);
+                command.Parameters.AddWithValue("$movieSlug", movieSlug);
+
+                var result = command.ExecuteScalar();
+                return result != null ? Convert.ToInt32(result) : (int?)null;
+            }
+        }
+
+        public void UpdateMovieRating(string movieSlug, int userRating)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+            {
+                connection.Open();
+
+                // Получаем текущие данные фильма
+                var getCommand = connection.CreateCommand();
+                getCommand.CommandText = "SELECT VoteCount, Rating FROM Movies WHERE Slug = $slug";
+                getCommand.Parameters.AddWithValue("$slug", movieSlug);
+
+                using (var reader = getCommand.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        int currentVoteCount = reader["VoteCount"] != DBNull.Value ? Convert.ToInt32(reader["VoteCount"]) : 0;
+                        float currentRating = reader["Rating"] != DBNull.Value ? Convert.ToSingle(reader["Rating"]) : 0f;
+
+                        // Обновляем рейтинг
+                        int newVoteCount = currentVoteCount + 1;
+                        float newRating = ((currentRating * currentVoteCount) + userRating) / newVoteCount;
+
+                        // Обновляем запись в базе
+                        var updateCommand = connection.CreateCommand();
+                        updateCommand.CommandText = @"
+                            UPDATE Movies 
+                            SET VoteCount = $voteCount, Rating = $rating 
+                            WHERE Slug = $slug";
+
+                        updateCommand.Parameters.AddWithValue("$voteCount", newVoteCount);
+                        updateCommand.Parameters.AddWithValue("$rating", newRating);
+                        updateCommand.Parameters.AddWithValue("$slug", movieSlug);
+
+                        updateCommand.ExecuteNonQuery();
+                    }
+                }
+            }
+        }
+
+        // ФИЛЬМЫ
         public void AddMovie(Movie movie)
         {
             using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
@@ -298,7 +390,7 @@ namespace MovieRecV5.Services
             return movies;
         }
 
-        //ПОЛЬЗОВАТЕЛИ
+        // ПОЛЬЗОВАТЕЛИ
         public bool AddUser(User user)
         {
             try

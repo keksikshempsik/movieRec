@@ -7,6 +7,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -93,8 +94,57 @@
             </StackPanel>
         </Grid>
 
+        <!-- Система оценки -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,15">
+            <TextBlock Text="Ваша оценка:" 
+                       FontWeight="Bold" 
+                       Margin="0,0,0,5"/>
+
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- Звезды для оценки -->
+                <ItemsControl x:Name="RatingStars" Loaded="RatingStars_Loaded">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Content="★"
+                                    FontSize="20"
+                                    Foreground="LightGray"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Padding="2"
+                                    Cursor="Hand"
+                                    Tag="{Binding}"
+                                    Click="StarButton_Click"
+                                    MouseEnter="StarButton_MouseEnter"
+                                    MouseLeave="StarButton_MouseLeave"
+                                    Loaded="StarButton_Loaded"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBlock x:Name="SelectedRatingText"
+                           Text="0/10"
+                           FontSize="12"
+                           VerticalAlignment="Center"
+                           Margin="10,0,0,0"
+                           Foreground="Gray"/>
+            </StackPanel>
+
+            <Button x:Name="SubmitRatingButton"
+                    Content="Подтвердить оценку"
+                    Click="SubmitRatingButton_Click"
+                    Width="120"
+                    Height="25"
+                    Margin="0,5,0,0"
+                    IsEnabled="False"/>
+        </StackPanel>
+
         <!-- Описание -->
-        <StackPanel Grid.Row="2">
+        <StackPanel Grid.Row="3">
             <TextBlock Text="Описание:" 
                        FontWeight="Bold" 
                        Margin="0,0,0,5"/>
