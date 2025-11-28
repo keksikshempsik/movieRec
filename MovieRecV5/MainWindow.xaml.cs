@@ -113,7 +113,12 @@ namespace MovieRecV5
                 if (moviesFromDb.Count >= 4)
                 {
                     Console.WriteLine($"📁 Найдено в базе: {moviesFromDb.Count} фильмов");
-                    DisplayMovies(moviesFromDb.Take(8).ToList());
+                    // СОРТИРОВКА ПО VOTE COUNT
+                    var sortedMovies = moviesFromDb
+                        .OrderByDescending(m => m.VoteCount)
+                        .Take(8)
+                        .ToList();
+                    DisplayMovies(sortedMovies);
                     return;
                 }
 
@@ -146,7 +151,7 @@ namespace MovieRecV5
 
                 movies.AddRange(newMovies);
 
-                // 3. Показываем результаты
+                // 3. Показываем результаты с СОРТИРОВКОЙ ПО VOTE COUNT
                 if (!movies.Any())
                 {
                     MessageBox.Show("Фильмы не найдены.");
@@ -156,7 +161,8 @@ namespace MovieRecV5
                 var finalMovies = movies
                     .GroupBy(m => m.Slug)
                     .Select(g => g.First())
-                    .OrderByDescending(m => m.Year)
+                    .OrderByDescending(m => m.VoteCount) // СОРТИРОВКА ПО VOTE COUNT
+                    .ThenByDescending(m => m.Year) // Дополнительная сортировка по году
                     .Take(8)
                     .ToList();
 
