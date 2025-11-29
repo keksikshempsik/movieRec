@@ -21,6 +21,7 @@ namespace MovieRecV5.ViewModels
         private List<Button> starButtons = new List<Button>();
         private DatabaseService _databaseService;
         private int _currentUserId;
+        private bool _isWatched = false;
 
         public MovieInfo(Movie movie, int userId = 0)
         {
@@ -33,6 +34,7 @@ namespace MovieRecV5.ViewModels
             _originalDescription = _movie.Description;
             InitializeRatingStars();
             LoadUserRating();
+            LoadWatchedStatus(); // Загружаем статус просмотра
         }
 
         public MovieInfo() : this(new Movie()) { }
@@ -286,6 +288,73 @@ namespace MovieRecV5.ViewModels
         private void StarButton_Loaded(object sender, RoutedEventArgs e)
         {
             // Этот метод может быть пустым, но он должен существовать если объявлен в XAML
+        }
+
+        private void LoadWatchedStatus()
+        {
+            if (_currentUserId > 0)
+            {
+                _isWatched = _databaseService.IsMovieWatched(_currentUserId, _movie.Slug);
+                UpdateWatchedButton();
+            }
+            else
+            {
+                WatchedButton.IsEnabled = false;
+                WatchedButton.ToolTip = "Для отметки фильма необходимо войти в систему";
+            }
+        }
+
+        private void UpdateWatchedButton()
+        {
+            if (_isWatched)
+            {
+                WatchedButton.Content = "Просмотрено ✓";
+                WatchedButton.Background = Brushes.LightGreen;
+                WatchedStatusText.Text = "Фильм отмечен как просмотренный";
+            }
+            else
+            {
+                WatchedButton.Content = "Отметить как просмотренный";
+                WatchedButton.Background = Brushes.LightBlue;
+                WatchedStatusText.Text = "";
+            }
+        }
+
+        private void WatchedButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentUserId <= 0)
+            {
+                MessageBox.Show("Для отметки фильма необходимо войти в систему", "Ошибка",
+                              MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                if (_isWatched)
+                {
+                    // Убираем отметку
+                    _databaseService.UnmarkMovieAsWatched(_currentUserId, _movie.Slug);
+                    _isWatched = false;
+                    MessageBox.Show("Фильм удален из списка просмотренных", "Информация",
+                                  MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    // Добавляем отметку
+                    _databaseService.MarkMovieAsWatched(_currentUserId, _movie.Slug);
+                    _isWatched = true;
+                    MessageBox.Show("Фильм отмечен как просмотренный!", "Успех",
+                                  MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+
+                UpdateWatchedButton();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка",
+                              MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }

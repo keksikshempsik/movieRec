@@ -1,6 +1,7 @@
-﻿using System;
+﻿using MovieRecV5.Models;
+using MovieRecV5.Services;
+using System;
 using System.Windows;
-using MovieRecV5.Models;
 
 namespace MovieRecV5.ViewModels
 {
@@ -8,13 +9,16 @@ namespace MovieRecV5.ViewModels
     {
         private User currentUser;
         private MainWindow mainWindow;
+        private DatabaseService _databaseService;
 
         public UserProfileWindow(User user, MainWindow mainWindow)
         {
             InitializeComponent();
             this.currentUser = user;
             this.mainWindow = mainWindow;
+            _databaseService = new DatabaseService();
             LoadUserData();
+            LoadWatchedMovies();
         }
 
         private void LoadUserData()
@@ -26,13 +30,22 @@ namespace MovieRecV5.ViewModels
             // Инициалы
             UserInitialsText.Text = GetUserInitials();
 
-            // Статистика (заглушки)
-            WatchedCountText.Text = "0";
-            FavoritesCountText.Text = "0";
-            RatingsCountText.Text = "0";
+            // Статистика
+            int watchedCount = _databaseService.GetWatchedMoviesCount(currentUser.Id);
+            WatchedCountText.Text = watchedCount.ToString();
+            FavoritesCountText.Text = "0"; // Можно добавить функционал избранного
+            RatingsCountText.Text = "0"; // Можно подсчитать количество оценок
 
             // Активность
-            ActivityText.Text = "Активность отсутствует";
+            ActivityText.Text = watchedCount > 0
+                ? $"Вы посмотрели {watchedCount} фильмов"
+                : "Активность отсутствует";
+        }
+
+        private void LoadWatchedMovies()
+        {
+            var watchedMovies = _databaseService.GetWatchedMovies(currentUser.Id);
+            // Здесь можно добавить отображение списка просмотренных фильмов
         }
 
         private string GetUserInitials()

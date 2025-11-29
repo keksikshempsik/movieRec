@@ -67,6 +67,17 @@ namespace MovieRecV5.Services
                 )";
 
                 createTableCommand.ExecuteNonQuery();
+
+                createTableCommand.CommandText = @"
+                CREATE TABLE IF NOT EXISTS WatchedMovies (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    UserId INTEGER NOT NULL,
+                    MovieSlug TEXT NOT NULL,
+                    WatchedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (UserId) REFERENCES Users (Id),
+                    UNIQUE(UserId, MovieSlug)
+                )";
+                createTableCommand.ExecuteNonQuery();
             }
         }
 
@@ -482,6 +493,109 @@ namespace MovieRecV5.Services
                 }
             }
             return null;
+        }
+
+        // Методы для работы с просмотренными фильмами
+        public void MarkMovieAsWatched(int userId, string movieSlug)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = @"
+                INSERT OR IGNORE INTO WatchedMovies (UserId, MovieSlug)
+                VALUES ($userId, $movieSlug)";
+
+                command.Parameters.AddWithValue("$userId", userId);
+                command.Parameters.AddWithValue("$movieSlug", movieSlug);
+
+                command.ExecuteNonQuery();
+            }
+        }
+
+        public void UnmarkMovieAsWatched(int userId, string movieSlug)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = @"
+                DELETE FROM WatchedMovies 
+                WHERE UserId = $userId AND MovieSlug = $movieSlug";
+
+                command.Parameters.AddWithValue("$userId", userId);
+                command.Parameters.AddWithValue("$movieSlug", movieSlug);
+
+                command.ExecuteNonQuery();
+            }
+        }
+
+        public bool IsMovieWatched(int userId, string movieSlug)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = @"
+                SELECT COUNT(*) FROM WatchedMovies 
+                WHERE UserId = $userId AND MovieSlug = $movieSlug";
+
+                command.Parameters.AddWithValue("$userId", userId);
+                command.Parameters.AddWithValue("$movieSlug", movieSlug);
+
+                var count = Convert.ToInt32(command.ExecuteScalar());
+                return count > 0;
+            }
+        }
+
+        public int GetWatchedMoviesCount(int userId)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = @"
+                SELECT COUNT(*) FROM WatchedMovies 
+                WHERE UserId = $userId";
+
+                command.Parameters.AddWithValue("$userId", userId);
+
+                return Convert.ToInt32(command.ExecuteScalar());
+            }
+        }
+
+        public List<Movie> GetWatchedMovies(int userId)
+        {
+            var movies = new List<Movie>();
+
+            using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = @"
+                SELECT m.* FROM Movies m
+                INNER JOIN WatchedMovies wm ON m.Slug = wm.MovieSlug
+                WHERE wm.UserId = $userId
+                ORDER BY wm.WatchedAt DESC";
+
+                command.Parameters.AddWithValue("$userId", userId);
+
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var movie = CreateMovieFromReader(reader);
+                        movie.IsWatched = true;
+                        movies.Add(movie);
+                    }
+                }
+            }
+            return movies;
         }
     }
 }

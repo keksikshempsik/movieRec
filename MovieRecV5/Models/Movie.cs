@@ -12,22 +12,21 @@ public class Movie
     public int VoteCount;
     public float Rating;
     public List<string> Genres { get; set; } = new List<string>();
+    public bool IsWatched { get; set; } // Добавляем свойство для отслеживания просмотра
 
     public string FormatVoteCount(int voteCount)
     {
         if (voteCount < 1000)
         {
-            return voteCount.ToString(); // Меньше 1000 - просто число
+            return voteCount.ToString();
         }
         else if (voteCount < 1000000)
         {
-            // Тысячи: 34597 -> 34.6К
             double thousands = voteCount / 1000.0;
             return $"{thousands:0.#}K";
         }
         else
         {
-            // Миллионы: 78234784 -> 78.2М
             double millions = voteCount / 1000000.0;
             return $"{millions:0.#}M";
         }

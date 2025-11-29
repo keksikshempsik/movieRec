@@ -8,6 +8,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -94,8 +95,25 @@
             </StackPanel>
         </Grid>
 
+        <!-- Кнопка отметки просмотра -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,10">
+            <Button x:Name="WatchedButton"
+                    Content="Отметить как просмотренный"
+                    Click="WatchedButton_Click"
+                    Width="180"
+                    Height="25"
+                    Background="LightGreen"/>
+
+            <TextBlock x:Name="WatchedStatusText"
+                       Text=""
+                       FontSize="12"
+                       VerticalAlignment="Center"
+                       Margin="10,0,0,0"
+                       Foreground="Green"/>
+        </StackPanel>
+
         <!-- Система оценки -->
-        <StackPanel Grid.Row="2" Margin="0,0,0,15">
+        <StackPanel Grid.Row="3" Margin="0,0,0,15">
             <TextBlock Text="Ваша оценка:" 
                        FontWeight="Bold" 
                        Margin="0,0,0,5"/>
@@ -144,7 +162,7 @@
         </StackPanel>
 
         <!-- Описание -->
-        <StackPanel Grid.Row="3">
+        <StackPanel Grid.Row="4">
             <TextBlock Text="Описание:" 
                        FontWeight="Bold" 
                        Margin="0,0,0,5"/>

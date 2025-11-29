@@ -203,10 +203,10 @@ namespace MovieRecV5
             var slugs = new List<string> { baseSlug };
 
             var keyYears = new[] {
-                2024, 2023, 2022, 2021, 2020,
+                2025, 2024, 2023, 2022, 2021, 
                 2019, 2018, 2017, 2016, 2015,
                 2012, 2010, 2008, 2005, 2000,
-                1999, 1998, 1995, 1990,
+                1999, 1998, 1995, 1990, 2020,
                 1980, 1982, 1970, 1960, 1950
             };
 
@@ -249,12 +249,12 @@ namespace MovieRecV5
             {
                 Margin = new Thickness(10),
                 Padding = new Thickness(0),
-                Background = Brushes.White,
-                BorderBrush = Brushes.LightGray,
-                BorderThickness = new Thickness(1),
+                Background = movie.IsWatched ? Brushes.LightGreen : Brushes.White, // Подсветка просмотренных
+                BorderBrush = movie.IsWatched ? Brushes.Green : Brushes.LightGray,
+                BorderThickness = new Thickness(movie.IsWatched ? 2 : 1),
                 Cursor = Cursors.Hand,
-                Width = 160, // Фиксированная ширина
-                Height = 280 // Фиксированная высота
+                Width = 160,
+                Height = 280
             };
 
             var stackPanel = new StackPanel
