@@ -2,33 +2,37 @@
 
 public class Movie
 {
-    public string Title;
-    public string Slug;
-    public int Year;
-    public string Description;
-    public string PosterUrl;
-    public string LetterBoxdUrl;
-    public string Poster;
-    public int VoteCount;
-    public float Rating;
-    public List<string> Genres { get; set; } = new List<string>();
-    public bool IsWatched { get; set; } // Добавляем свойство для отслеживания просмотра
+    public int Id { get; set; }
+    public string Title { get; set; }
+    public string Slug { get; set; }
+    public int Year { get; set; }
+    public string Description { get; set; }
+    public string PosterUrl { get; set; }
+    public string LetterBoxdUrl { get; set; }
+    public string Poster { get; set; }
+    public List<string> Genres { get; set; }
+    public int VoteCount { get; set; }
+    public float Rating { get; set; }
 
-    public string FormatVoteCount(int voteCount)
+    // Свойство для отслеживания статуса просмотра текущим пользователем
+    public bool IsWatched { get; set; }
+
+    // Свойство для хранения оценки пользователя
+    public int? UserRating { get; set; }
+
+    public Movie()
     {
-        if (voteCount < 1000)
-        {
-            return voteCount.ToString();
-        }
-        else if (voteCount < 1000000)
-        {
-            double thousands = voteCount / 1000.0;
-            return $"{thousands:0.#}K";
-        }
+        Genres = new List<string>();
+        IsWatched = false;
+    }
+
+    public string FormatVoteCount(int count)
+    {
+        if (count >= 1000000)
+            return (count / 1000000.0).ToString("F1") + "M";
+        else if (count >= 1000)
+            return (count / 1000.0).ToString("F1") + "K";
         else
-        {
-            double millions = voteCount / 1000000.0;
-            return $"{millions:0.#}M";
-        }
+            return count.ToString();
     }
 }

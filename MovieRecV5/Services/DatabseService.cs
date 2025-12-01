@@ -201,7 +201,7 @@ namespace MovieRecV5.Services
             }
         }
 
-        public List<Movie> GetMoviesFromDatabase(string searchTitle)
+        public List<Movie> GetMoviesFromDatabase(string searchTitle, int userId = 0)
         {
             var movies = new List<Movie>();
 
@@ -224,14 +224,14 @@ namespace MovieRecV5.Services
                 {
                     while (reader.Read())
                     {
-                        movies.Add(CreateMovieFromReader(reader));
+                        movies.Add(CreateMovieFromReader(reader, userId));
                     }
                 }
             }
             return movies;
         }
 
-        public List<Movie> SearchMoviesInDatabase(string searchTerm)
+        public List<Movie> SearchMoviesInDatabase(string searchTerm, int userId = 0)
         {
             var movies = new List<Movie>();
 
@@ -241,16 +241,16 @@ namespace MovieRecV5.Services
 
                 var command = connection.CreateCommand();
                 command.CommandText = @"
-                    SELECT * FROM Movies 
-                    WHERE Title LIKE $searchTerm 
-                    OR Slug LIKE $searchTerm
-                    OR Genres LIKE $searchTerm
-                    ORDER BY 
-                        CASE 
-                            WHEN Title = $exactTitle THEN 1
-                            WHEN Title LIKE $startsWith THEN 2
-                            ELSE 3
-                        END";
+            SELECT * FROM Movies 
+            WHERE Title LIKE $searchTerm 
+            OR Slug LIKE $searchTerm
+            OR Genres LIKE $searchTerm
+            ORDER BY 
+                CASE 
+                    WHEN Title = $exactTitle THEN 1
+                    WHEN Title LIKE $startsWith THEN 2
+                    ELSE 3
+                END";
 
                 command.Parameters.AddWithValue("$searchTerm", $"%{searchTerm}%");
                 command.Parameters.AddWithValue("$exactTitle", searchTerm);
@@ -260,14 +260,14 @@ namespace MovieRecV5.Services
                 {
                     while (reader.Read())
                     {
-                        movies.Add(CreateMovieFromReader(reader));
+                        movies.Add(CreateMovieFromReader(reader, userId));
                     }
                 }
             }
             return movies;
         }
 
-        private Movie CreateMovieFromReader(SQLiteDataReader reader)
+        private Movie CreateMovieFromReader(SQLiteDataReader reader, int userId = 0)
         {
             var movie = new Movie
             {
@@ -298,6 +298,12 @@ namespace MovieRecV5.Services
             else
             {
                 movie.Genres = new List<string>();
+            }
+
+            // Проверяем, просмотрен ли фильм пользователем (если userId > 0)
+            if (userId > 0)
+            {
+                movie.IsWatched = IsMovieWatched(userId, movie.Slug);
             }
 
             return movie;
@@ -372,7 +378,7 @@ namespace MovieRecV5.Services
             return slug;
         }
 
-        public List<Movie> SearchAllMovieVariants(string searchTitle)
+        public List<Movie> SearchAllMovieVariants(string searchTitle, int userId = 0)
         {
             var movies = new List<Movie>();
 
@@ -394,7 +400,7 @@ namespace MovieRecV5.Services
                 {
                     while (reader.Read())
                     {
-                        movies.Add(CreateMovieFromReader(reader));
+                        movies.Add(CreateMovieFromReader(reader, userId));
                     }
                 }
             }
@@ -578,10 +584,10 @@ namespace MovieRecV5.Services
 
                 var command = connection.CreateCommand();
                 command.CommandText = @"
-                SELECT m.* FROM Movies m
-                INNER JOIN WatchedMovies wm ON m.Slug = wm.MovieSlug
-                WHERE wm.UserId = $userId
-                ORDER BY wm.WatchedAt DESC";
+            SELECT m.* FROM Movies m
+            INNER JOIN WatchedMovies wm ON m.Slug = wm.MovieSlug
+            WHERE wm.UserId = $userId
+            ORDER BY wm.WatchedAt DESC";
 
                 command.Parameters.AddWithValue("$userId", userId);
 
@@ -589,8 +595,8 @@ namespace MovieRecV5.Services
                 {
                     while (reader.Read())
                     {
-                        var movie = CreateMovieFromReader(reader);
-                        movie.IsWatched = true;
+                        var movie = CreateMovieFromReader(reader, userId);
+                        movie.IsWatched = true; // Всегда true для этого метода
                         movies.Add(movie);
                     }
                 }

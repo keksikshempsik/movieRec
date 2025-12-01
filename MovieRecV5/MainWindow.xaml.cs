@@ -106,14 +106,13 @@ namespace MovieRecV5
                 string searchTitle = SearchTextBox.Text.Trim();
                 Console.WriteLine($"🔍 Поиск: '{searchTitle}'");
 
-                // 1. Быстрый поиск в базе
-                var baseSlug = parser.ConvertToSlug(searchTitle);
-                var moviesFromDb = _databaseService.GetMoviesFromDatabase(searchTitle);
+                // Передаем ID текущего пользователя при поиске в базе
+                int userId = CurrentUser?.Id ?? 0;
+                var moviesFromDb = _databaseService.GetMoviesFromDatabase(searchTitle, userId);
 
                 if (moviesFromDb.Count >= 4)
                 {
                     Console.WriteLine($"📁 Найдено в базе: {moviesFromDb.Count} фильмов");
-                    // СОРТИРОВКА ПО VOTE COUNT
                     var sortedMovies = moviesFromDb
                         .OrderByDescending(m => m.VoteCount)
                         .Take(8)
@@ -125,6 +124,7 @@ namespace MovieRecV5
                 List<Movie> movies = new List<Movie>(moviesFromDb);
 
                 // 2. Ограниченный онлайн-поиск
+                var baseSlug = parser.ConvertToSlug(searchTitle);
                 var possibleSlugs = GenerateSlugsWithYears(baseSlug).Take(15);
                 Console.WriteLine($"🔄 Поиск {possibleSlugs.Count()} slugs");
 
@@ -151,7 +151,16 @@ namespace MovieRecV5
 
                 movies.AddRange(newMovies);
 
-                // 3. Показываем результаты с СОРТИРОВКОЙ ПО VOTE COUNT
+                // 3. Проверяем для всех фильмов, просмотрены ли они текущим пользователем
+                foreach (var movie in movies)
+                {
+                    if (userId > 0)
+                    {
+                        movie.IsWatched = _databaseService.IsMovieWatched(userId, movie.Slug);
+                    }
+                }
+
+                // 4. Показываем результаты
                 if (!movies.Any())
                 {
                     MessageBox.Show("Фильмы не найдены.");
@@ -161,8 +170,8 @@ namespace MovieRecV5
                 var finalMovies = movies
                     .GroupBy(m => m.Slug)
                     .Select(g => g.First())
-                    .OrderByDescending(m => m.VoteCount) // СОРТИРОВКА ПО VOTE COUNT
-                    .ThenByDescending(m => m.Year) // Дополнительная сортировка по году
+                    .OrderByDescending(m => m.VoteCount)
+                    .ThenByDescending(m => m.Year)
                     .Take(8)
                     .ToList();
 
@@ -249,7 +258,7 @@ namespace MovieRecV5
             {
                 Margin = new Thickness(10),
                 Padding = new Thickness(0),
-                Background = movie.IsWatched ? Brushes.LightGreen : Brushes.White, // Подсветка просмотренных
+                Background = movie.IsWatched ? Brushes.LightGreen : Brushes.White,
                 BorderBrush = movie.IsWatched ? Brushes.Green : Brushes.LightGray,
                 BorderThickness = new Thickness(movie.IsWatched ? 2 : 1),
                 Cursor = Cursors.Hand,
@@ -263,7 +272,7 @@ namespace MovieRecV5
                 HorizontalAlignment = HorizontalAlignment.Center
             };
 
-            // Контейнер для постера с фиксированными размерами
+            // Контейнер для постера
             var posterContainer = new Border
             {
                 Width = 140,
@@ -274,6 +283,21 @@ namespace MovieRecV5
                 Child = CreatePosterImage(movie)
             };
             stackPanel.Children.Add(posterContainer);
+
+            // Иконка просмотра (если фильм просмотрен)
+            if (movie.IsWatched)
+            {
+                var watchedIcon = new TextBlock
+                {
+                    Text = "✓ Просмотрено",
+                    FontSize = 10,
+                    Foreground = Brushes.Green,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Margin = new Thickness(0, 2, 0, 0),
+                    FontWeight = FontWeights.Bold
+                };
+                stackPanel.Children.Add(watchedIcon);
+            }
 
             // Текстовая информация
             var textContainer = new StackPanel
@@ -295,6 +319,18 @@ namespace MovieRecV5
                 MaxHeight = 35
             };
             textContainer.Children.Add(titleText);
+
+            // Рейтинг
+            var ratingText = new TextBlock
+            {
+                Text = $"★ {movie.Rating:F1}/10",
+                TextAlignment = TextAlignment.Center,
+                FontSize = 11,
+                Foreground = Brushes.Gold,
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(0, 3, 0, 0)
+            };
+            textContainer.Children.Add(ratingText);
 
             // Жанры
             if (movie.Genres != null && movie.Genres.Any())
