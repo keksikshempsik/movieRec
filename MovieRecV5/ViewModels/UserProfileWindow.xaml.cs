@@ -34,7 +34,9 @@ namespace MovieRecV5.ViewModels
             int watchedCount = _databaseService.GetWatchedMoviesCount(currentUser.Id);
             WatchedCountText.Text = watchedCount.ToString();
             FavoritesCountText.Text = "0"; // Можно добавить функционал избранного
-            RatingsCountText.Text = "0"; // Можно подсчитать количество оценок
+
+            // Подсчет оценок (добавьте этот метод в DatabaseService)
+            RatingsCountText.Text = _databaseService.GetUserRatingsCount(currentUser.Id).ToString();
 
             // Активность
             ActivityText.Text = watchedCount > 0
@@ -92,8 +94,12 @@ namespace MovieRecV5.ViewModels
 
         private void HistoryButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Функция истории просмотров в разработке",
-                "В разработке", MessageBoxButton.OK, MessageBoxImage.Information);
+            var watchedMoviesWindow = new WatchedMoviesWindow(currentUser)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            watchedMoviesWindow.ShowDialog();
         }
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)

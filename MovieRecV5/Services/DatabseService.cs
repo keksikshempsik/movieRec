@@ -597,5 +597,19 @@ namespace MovieRecV5.Services
             }
             return movies;
         }
+
+        public int GetUserRatingsCount(int userId)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = "SELECT COUNT(*) FROM UserRatings WHERE UserId = $userId";
+                command.Parameters.AddWithValue("$userId", userId);
+
+                return Convert.ToInt32(command.ExecuteScalar());
+            }
+        }
     }
 }

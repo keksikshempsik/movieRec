@@ -123,7 +123,7 @@
                             Height="25"
                             Margin="0,2"/>
 
-                    <Button Content="История просмотров" 
+                    <Button Content="Просмотренные фильмы" 
                             Click="HistoryButton_Click"
                             Width="150"
                             Height="25"
