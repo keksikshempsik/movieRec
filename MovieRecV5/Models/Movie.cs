@@ -13,17 +13,15 @@ public class Movie
     public List<string> Genres { get; set; }
     public int VoteCount { get; set; }
     public float Rating { get; set; }
-
-    // Свойство для отслеживания статуса просмотра текущим пользователем
     public bool IsWatched { get; set; }
-
-    // Свойство для хранения оценки пользователя
     public int? UserRating { get; set; }
+    public bool InWatchList { get; set; }
 
     public Movie()
     {
         Genres = new List<string>();
         IsWatched = false;
+        InWatchList = false;
     }
 
     public string FormatVoteCount(int count)

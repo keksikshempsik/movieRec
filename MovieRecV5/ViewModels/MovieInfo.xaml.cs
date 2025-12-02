@@ -22,6 +22,7 @@ namespace MovieRecV5.ViewModels
         private DatabaseService _databaseService;
         private int _currentUserId;
         private bool _isWatched = false;
+        private bool _isInWatchList = false;
 
         public MovieInfo(Movie movie, int userId = 0)
         {
@@ -35,6 +36,7 @@ namespace MovieRecV5.ViewModels
             InitializeRatingStars();
             LoadUserRating();
             LoadWatchedStatus(); // Загружаем статус просмотра
+            LoadWatchListStatus();
         }
 
         public MovieInfo() : this(new Movie()) { }
@@ -318,6 +320,9 @@ namespace MovieRecV5.ViewModels
                 WatchedButton.Background = Brushes.LightBlue;
                 WatchedStatusText.Text = "";
             }
+
+            // Также обновляем WatchList кнопку, так как статус просмотра влияет на её отображение
+            UpdateWatchListButton();
         }
 
         private void WatchedButton_Click(object sender, RoutedEventArgs e)
@@ -356,5 +361,85 @@ namespace MovieRecV5.ViewModels
                               MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        private void LoadWatchListStatus()
+        {
+            if (_currentUserId > 0)
+            {
+                _isInWatchList = _databaseService.IsInWatchList(_currentUserId, _movie.Slug);
+                UpdateWatchListButton();
+            }
+            else
+            {
+                WatchListButton.IsEnabled = false;
+                WatchListButton.ToolTip = "Для добавления в список 'Хочу посмотреть' необходимо войти в систему";
+            }
+        }
+
+        private void UpdateWatchListButton()
+        {
+            if (_isWatched && _isInWatchList)
+            {
+                // Фильм просмотрен и в WatchList (хочет пересмотреть)
+                WatchListButton.Content = "Хочу пересмотреть ✓";
+                WatchListButton.Background = Brushes.LightCoral; // Красный для пересмотра
+                WatchListStatusText.Text = "Хотите пересмотреть этот фильм";
+                WatchListStatusText.Foreground = Brushes.Red;
+            }
+            else if (_isInWatchList)
+            {
+                // Фильм в WatchList (хочет посмотреть)
+                WatchListButton.Content = "В списке 'Хочу посмотреть' ✓";
+                WatchListButton.Background = Brushes.LightYellow; // Желтый для WatchList
+                WatchListStatusText.Text = "Фильм добавлен в список 'Хочу посмотреть'";
+                WatchListStatusText.Foreground = Brushes.Orange;
+            }
+            else
+            {
+                // Не в WatchList
+                WatchListButton.Content = "Хочу посмотреть";
+                WatchListButton.Background = Brushes.LightYellow;
+                WatchListStatusText.Text = "";
+            }
+        }
+
+        private void WatchListButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentUserId <= 0)
+            {
+                MessageBox.Show("Для добавления в список 'Хочу посмотреть' необходимо войти в систему", "Ошибка",
+                              MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                if (_isInWatchList)
+                {
+                    // Удаляем из WatchList
+                    _databaseService.RemoveFromWatchList(_currentUserId, _movie.Slug);
+                    _isInWatchList = false;
+                    MessageBox.Show("Фильм удален из списка 'Хочу посмотреть'", "Информация",
+                                  MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    // Добавляем в WatchList
+                    _databaseService.AddToWatchList(_currentUserId, _movie.Slug);
+                    _isInWatchList = true;
+                    MessageBox.Show("Фильм добавлен в список 'Хочу посмотреть'!", "Успех",
+                                  MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+
+                UpdateWatchListButton();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка",
+                              MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
     }
 }

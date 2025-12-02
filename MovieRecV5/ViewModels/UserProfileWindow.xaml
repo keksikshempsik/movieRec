@@ -85,21 +85,27 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Center">
-                        <TextBlock Text="Просмотрено фильмов" FontSize="11" Foreground="Gray" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Просмотрено" FontSize="11" Foreground="Gray" HorizontalAlignment="Center"/>
                         <TextBlock x:Name="WatchedCountText" Text="0" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Center">
-                        <TextBlock Text="В избранном" FontSize="11" Foreground="Gray" HorizontalAlignment="Center"/>
-                        <TextBlock x:Name="FavoritesCountText" Text="0" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Хочу посмотреть" FontSize="11" Foreground="Gray" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="WatchListCountText" Text="0" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="2" Orientation="Vertical" HorizontalAlignment="Center">
                         <TextBlock Text="Оценок" FontSize="11" Foreground="Gray" HorizontalAlignment="Center"/>
                         <TextBlock x:Name="RatingsCountText" Text="0" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="3" Orientation="Vertical" HorizontalAlignment="Center">
+                        <TextBlock Text="Избранное" FontSize="11" Foreground="Gray" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="FavoritesCountText" Text="0" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Grid>
             </StackPanel>
@@ -117,8 +123,9 @@
                             Height="25"
                             Margin="0,2"/>
 
-                    <Button Content="Избранные фильмы" 
-                            Click="FavoritesButton_Click"
+                    <!-- ДОБАВЛЕНА КНОПКА ДЛЯ WATCHLIST -->
+                    <Button Content="Хочу посмотреть" 
+                            Click="WatchListButton_Click"
                             Width="150"
                             Height="25"
                             Margin="0,2"/>

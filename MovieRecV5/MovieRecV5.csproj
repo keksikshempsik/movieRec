@@ -111,6 +111,9 @@
     <Compile Include="ViewModels\WatchedMoviesWindow.xaml.cs">
       <DependentUpon>WatchedMoviesWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ViewModels\WatchListWindow.xaml.cs">
+      <DependentUpon>WatchListWindow.xaml</DependentUpon>
+    </Compile>
     <Page Include="ViewModels\Login.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -138,6 +141,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="ViewModels\WatchedMoviesWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ViewModels\WatchListWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

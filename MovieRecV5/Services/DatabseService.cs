@@ -78,7 +78,122 @@ namespace MovieRecV5.Services
                     UNIQUE(UserId, MovieSlug)
                 )";
                 createTableCommand.ExecuteNonQuery();
+
+                createTableCommand.CommandText = @"
+                CREATE TABLE IF NOT EXISTS WatchList (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    UserId INTEGER NOT NULL,
+                    MovieSlug TEXT NOT NULL,
+                    AddedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (UserId) REFERENCES Users (Id),
+                    UNIQUE(UserId, MovieSlug)
+                )";
+                createTableCommand.ExecuteNonQuery();
             }
+        }
+
+        // Методы для работы с WatchList
+        public void AddToWatchList(int userId, string movieSlug)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = @"
+            INSERT OR IGNORE INTO WatchList (UserId, MovieSlug)
+            VALUES ($userId, $movieSlug)";
+
+                command.Parameters.AddWithValue("$userId", userId);
+                command.Parameters.AddWithValue("$movieSlug", movieSlug);
+
+                command.ExecuteNonQuery();
+            }
+        }
+
+        public void RemoveFromWatchList(int userId, string movieSlug)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = @"
+            DELETE FROM WatchList 
+            WHERE UserId = $userId AND MovieSlug = $movieSlug";
+
+                command.Parameters.AddWithValue("$userId", userId);
+                command.Parameters.AddWithValue("$movieSlug", movieSlug);
+
+                command.ExecuteNonQuery();
+            }
+        }
+
+        public bool IsInWatchList(int userId, string movieSlug)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = @"
+            SELECT COUNT(*) FROM WatchList 
+            WHERE UserId = $userId AND MovieSlug = $movieSlug";
+
+                command.Parameters.AddWithValue("$userId", userId);
+                command.Parameters.AddWithValue("$movieSlug", movieSlug);
+
+                var count = Convert.ToInt32(command.ExecuteScalar());
+                return count > 0;
+            }
+        }
+
+        public int GetWatchListCount(int userId)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = @"
+            SELECT COUNT(*) FROM WatchList 
+            WHERE UserId = $userId";
+
+                command.Parameters.AddWithValue("$userId", userId);
+
+                return Convert.ToInt32(command.ExecuteScalar());
+            }
+        }
+
+        public List<Movie> GetWatchListMovies(int userId)
+        {
+            var movies = new List<Movie>();
+
+            using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = @"
+            SELECT m.* FROM Movies m
+            INNER JOIN WatchList wl ON m.Slug = wl.MovieSlug
+            WHERE wl.UserId = $userId
+            ORDER BY wl.AddedAt DESC";
+
+                command.Parameters.AddWithValue("$userId", userId);
+
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var movie = CreateMovieFromReader(reader, userId);
+                        // Устанавливаем статусы для фильмов из WatchList
+                        movie.IsWatched = IsMovieWatched(userId, movie.Slug);
+                        movies.Add(movie);
+                    }
+                }
+            }
+            return movies;
         }
 
         // МЕТОДЫ ДЛЯ РЕЙТИНГОВ
@@ -304,6 +419,7 @@ namespace MovieRecV5.Services
             if (userId > 0)
             {
                 movie.IsWatched = IsMovieWatched(userId, movie.Slug);
+                movie.InWatchList = IsInWatchList(userId, movie.Slug); // Новый статус
             }
 
             return movie;

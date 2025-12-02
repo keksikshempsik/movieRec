@@ -32,16 +32,26 @@ namespace MovieRecV5.ViewModels
 
             // Статистика
             int watchedCount = _databaseService.GetWatchedMoviesCount(currentUser.Id);
+            int watchListCount = _databaseService.GetWatchListCount(currentUser.Id);
+            int ratingsCount = _databaseService.GetUserRatingsCount(currentUser.Id);
+
             WatchedCountText.Text = watchedCount.ToString();
+            WatchListCountText.Text = watchListCount.ToString();
+            RatingsCountText.Text = ratingsCount.ToString();
             FavoritesCountText.Text = "0"; // Можно добавить функционал избранного
 
-            // Подсчет оценок (добавьте этот метод в DatabaseService)
-            RatingsCountText.Text = _databaseService.GetUserRatingsCount(currentUser.Id).ToString();
-
             // Активность
-            ActivityText.Text = watchedCount > 0
-                ? $"Вы посмотрели {watchedCount} фильмов"
-                : "Активность отсутствует";
+            string activity = "";
+            if (watchListCount > 0)
+                activity += $"{watchListCount} фильмов в списке 'Хочу посмотреть'\n";
+            if (watchedCount > 0)
+                activity += $"Просмотрено {watchedCount} фильмов\n";
+            if (ratingsCount > 0)
+                activity += $"Оставлено {ratingsCount} оценок";
+
+            ActivityText.Text = string.IsNullOrEmpty(activity)
+                ? "Активность отсутствует"
+                : activity;
         }
 
         private void LoadWatchedMovies()
@@ -106,6 +116,16 @@ namespace MovieRecV5.ViewModels
         {
             MessageBox.Show("Функция настроек в разработке",
                 "В разработке", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void WatchListButton_Click(object sender, RoutedEventArgs e)
+        {
+            var watchListWindow = new WatchListWindow(currentUser)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            watchListWindow.ShowDialog();
         }
     }
 }

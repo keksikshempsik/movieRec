@@ -258,9 +258,9 @@ namespace MovieRecV5
             {
                 Margin = new Thickness(10),
                 Padding = new Thickness(0),
-                Background = movie.IsWatched ? Brushes.LightGreen : Brushes.White,
-                BorderBrush = movie.IsWatched ? Brushes.Green : Brushes.LightGray,
-                BorderThickness = new Thickness(movie.IsWatched ? 2 : 1),
+                Background = GetMovieBackground(movie),
+                BorderBrush = GetMovieBorderColor(movie),
+                BorderThickness = new Thickness(2),
                 Cursor = Cursors.Hand,
                 Width = 160,
                 Height = 280
@@ -472,6 +472,53 @@ namespace MovieRecV5
         {
             var loginPage = new Login(this);
             loginPage.ShowDialog();
+        }
+
+        private Brush GetMovieBackground(Movie movie)
+        {
+            // Проверяем, находится ли фильм в WatchList (используем метод из DatabaseService)
+            bool isInWatchList = CurrentUser != null &&
+                                 _databaseService.IsInWatchList(CurrentUser.Id, movie.Slug);
+
+            if (movie.IsWatched && isInWatchList)
+            {
+                return Brushes.LightCoral; // Красный - просмотрен и хочет пересмотреть
+            }
+            else if (isInWatchList)
+            {
+                return Brushes.LightYellow; // Желтый - в WatchList
+            }
+            else if (movie.IsWatched)
+            {
+                return Brushes.LightGreen; // Зеленый - просмотрен
+            }
+            else
+            {
+                return Brushes.White; // Белый - обычный фильм
+            }
+        }
+
+        private Brush GetMovieBorderColor(Movie movie)
+        {
+            bool isInWatchList = CurrentUser != null &&
+                                 _databaseService.IsInWatchList(CurrentUser.Id, movie.Slug);
+
+            if (movie.IsWatched && isInWatchList)
+            {
+                return Brushes.Red; // Красная рамка
+            }
+            else if (isInWatchList)
+            {
+                return Brushes.Orange; // Оранжевая рамка
+            }
+            else if (movie.IsWatched)
+            {
+                return Brushes.Green; // Зеленая рамка
+            }
+            else
+            {
+                return Brushes.LightGray; // Серая рамка
+            }
         }
     }
 }

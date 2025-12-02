@@ -110,6 +110,26 @@
                        VerticalAlignment="Center"
                        Margin="10,0,0,0"
                        Foreground="Green"/>
+            
+            
+        </StackPanel>
+
+        <!-- Кнопка добавления в WatchList -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="200,0,0,10">
+            <Button x:Name="WatchListButton"
+            Content="Хочу посмотреть"
+            Click="WatchListButton_Click"
+            Width="150"
+            Height="25"
+            Background="LightYellow"
+            Margin="10,0,0,0"/>
+
+            <TextBlock x:Name="WatchListStatusText"
+               Text=""
+               FontSize="12"
+               VerticalAlignment="Center"
+               Margin="10,0,0,0"
+               Foreground="Orange"/>
         </StackPanel>
 
         <!-- Система оценки -->
