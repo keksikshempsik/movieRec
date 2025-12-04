@@ -1,7 +1,10 @@
 ﻿using MovieRecV5.Models;
 using MovieRecV5.Services;
 using System;
+using System.IO;
 using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace MovieRecV5.ViewModels
 {
@@ -17,18 +20,134 @@ namespace MovieRecV5.ViewModels
             this.currentUser = user;
             this.mainWindow = mainWindow;
             _databaseService = new DatabaseService();
+
+            // Инициализируем аватар
+            InitializeAvatar();
+
             LoadUserData();
             LoadWatchedMovies();
+        }
+
+        private void InitializeAvatar()
+        {
+            try
+            {
+                // Проверяем наличие аватара у пользователя
+                if (currentUser != null && !string.IsNullOrEmpty(currentUser.AvatarUrl))
+                {
+                    if (currentUser.AvatarUrl == "default")
+                    {
+                        // Устанавливаем аватар по умолчанию с инициалами
+                        SetDefaultAvatarWithInitials();
+                    }
+                    else if (File.Exists(currentUser.AvatarUrl))
+                    {
+                        // Загружаем из файла
+                        LoadAvatarFromFile(currentUser.AvatarUrl);
+                    }
+                    else if (currentUser.AvatarUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Загружаем из URL
+                        LoadAvatarFromUrl(currentUser.AvatarUrl);
+                    }
+                    else
+                    {
+                        SetDefaultAvatarWithInitials();
+                    }
+                }
+                else
+                {
+                    SetDefaultAvatarWithInitials();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error initializing avatar: {ex.Message}");
+                SetDefaultAvatarWithInitials();
+            }
+        }
+
+        private void LoadAvatarFromFile(string filePath)
+        {
+            try
+            {
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.UriSource = new Uri(filePath, UriKind.Absolute);
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.EndInit();
+                bitmap.Freeze(); // Важно для безопасности в WPF
+                UserAvatarImage.Source = bitmap;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading avatar from file: {ex.Message}");
+                SetDefaultAvatarWithInitials();
+            }
+        }
+
+        private async void LoadAvatarFromUrl(string url)
+        {
+            try
+            {
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.UriSource = new Uri(url, UriKind.Absolute);
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.EndInit();
+                bitmap.Freeze();
+                UserAvatarImage.Source = bitmap;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading avatar from URL: {ex.Message}");
+                SetDefaultAvatarWithInitials();
+            }
+        }
+
+        private void SetDefaultAvatarWithInitials()
+        {
+            // Создаем аватар с инициалами пользователя
+            var drawingVisual = new DrawingVisual();
+            using (var drawingContext = drawingVisual.RenderOpen())
+            {
+                // Фон
+                drawingContext.DrawEllipse(
+                    Brushes.LightGray,
+                    new Pen(Brushes.DarkGray, 1),
+                    new Point(40, 40),
+                    40, 40);
+
+                // Инициалы
+                string initials = GetUserInitials();
+                var formattedText = new FormattedText(
+                    initials,
+                    System.Globalization.CultureInfo.CurrentCulture,
+                    FlowDirection.LeftToRight,
+                    new Typeface("Arial"),
+                    24,
+                    Brushes.White,
+                    96.0
+                );
+
+                // Центрируем текст
+                double x = 40 - formattedText.Width / 2;
+                double y = 40 - formattedText.Height / 2;
+                drawingContext.DrawText(formattedText, new Point(x, y));
+            }
+
+            var renderTarget = new RenderTargetBitmap(80, 80, 96, 96, PixelFormats.Pbgra32);
+            renderTarget.Render(drawingVisual);
+            renderTarget.Freeze();
+
+            UserAvatarImage.Source = renderTarget;
         }
 
         private void LoadUserData()
         {
             // Основная информация
-            UserNameText.Text = currentUser?.Login ?? "Пользователь";
+            UserNameText.Text = currentUser?.DisplayName ?? currentUser?.Login ?? "Пользователь";
             UserEmailText.Text = currentUser?.Email ?? "Email не указан";
-
-            // Инициалы
-            UserInitialsText.Text = GetUserInitials();
 
             // Статистика
             int watchedCount = _databaseService.GetWatchedMoviesCount(currentUser.Id);
@@ -54,25 +173,42 @@ namespace MovieRecV5.ViewModels
                 : activity;
         }
 
-        private void LoadWatchedMovies()
-        {
-            var watchedMovies = _databaseService.GetWatchedMovies(currentUser.Id);
-            // Здесь можно добавить отображение списка просмотренных фильмов
-        }
-
         private string GetUserInitials()
         {
             if (string.IsNullOrEmpty(currentUser?.Login))
                 return "??";
 
-            var login = currentUser.Login.Trim();
-            if (login.Length >= 2)
-                return login.Substring(0, 2).ToUpper();
+            var name = !string.IsNullOrEmpty(currentUser.DisplayName)
+                ? currentUser.DisplayName
+                : currentUser.Login;
 
-            return login.ToUpper() + "?";
+            name = name.Trim();
+
+            if (name.Length >= 2)
+            {
+                // Берем первые две буквы
+                return name.Substring(0, 2).ToUpper();
+            }
+
+            return name.ToUpper() + "?";
         }
 
-        // ДОБАВЛЕННЫЙ МЕТОД
+        private void LoadWatchedMovies()
+        {
+            // Этот метод остается без изменений
+            var watchedMovies = _databaseService.GetWatchedMovies(currentUser.Id);
+        }
+
+        // ДОБАВЛЕННЫЙ МЕТОД: Обновление аватара после редактирования профиля
+        public void RefreshUserAvatar()
+        {
+            // Обновляем аватар при изменении профиля
+            InitializeAvatar();
+
+            // Также обновляем остальные данные
+            LoadUserData();
+        }
+
         private void BackButton_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
@@ -92,8 +228,30 @@ namespace MovieRecV5.ViewModels
 
         private void EditProfileButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Функция редактирования профиля в разработке",
-                "В разработке", MessageBoxButton.OK, MessageBoxImage.Information);
+            var editWindow = new EditProfileWindow(currentUser)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            if (editWindow.ShowDialog() == true)
+            {
+                // Обновляем данные пользователя из базы
+                var updatedUser = _databaseService.GetUserByLogin(currentUser.Login);
+                if (updatedUser != null)
+                {
+                    currentUser = updatedUser;
+
+                    // Обновляем аватар
+                    RefreshUserAvatar();
+
+                    // Сообщаем главному окну об изменениях
+                    if (mainWindow != null)
+                    {
+                        mainWindow.RefreshUserData();
+                    }
+                }
+            }
         }
 
         private void FavoritesButton_Click(object sender, RoutedEventArgs e)

@@ -21,6 +21,11 @@ namespace MovieRecV5.Services
             _httpClient = new HttpClient();
         }
 
+        public string GetDatabasePath()
+        {
+            return _databasePath;
+        }
+
         public void InitializeDatabase()
         {
             using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
@@ -49,12 +54,14 @@ namespace MovieRecV5.Services
                 CREATE TABLE IF NOT EXISTS Users (
                     Id INTEGER PRIMARY KEY AUTOINCREMENT,
                     Login TEXT NOT NULL UNIQUE,
+                    DisplayName TEXT NOT NULL,
                     Email TEXT NOT NULL UNIQUE,
-                    Password TEXT NOT NULL)";
+                    Password TEXT NOT NULL,
+                    AvatarUrl TEXT DEFAULT ''
+                )";
 
                 createTableCommand.ExecuteNonQuery();
 
-                // Новая таблица для пользовательских оценок
                 createTableCommand.CommandText = @"
                 CREATE TABLE IF NOT EXISTS UserRatings (
                     Id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -89,10 +96,12 @@ namespace MovieRecV5.Services
                     UNIQUE(UserId, MovieSlug)
                 )";
                 createTableCommand.ExecuteNonQuery();
+
+                AddDefaultUserIfNotExists();
             }
         }
 
-        // Методы для работы с WatchList
+        // ВОТЧЛИСТ
         public void AddToWatchList(int userId, string movieSlug)
         {
             using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
@@ -187,7 +196,6 @@ namespace MovieRecV5.Services
                     while (reader.Read())
                     {
                         var movie = CreateMovieFromReader(reader, userId);
-                        // Устанавливаем статусы для фильмов из WatchList
                         movie.IsWatched = IsMovieWatched(userId, movie.Slug);
                         movies.Add(movie);
                     }
@@ -196,7 +204,7 @@ namespace MovieRecV5.Services
             return movies;
         }
 
-        // МЕТОДЫ ДЛЯ РЕЙТИНГОВ
+        // РЕЙТИНГИ
         public void SaveUserRating(int userId, string movieSlug, int rating)
         {
             using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
@@ -241,7 +249,6 @@ namespace MovieRecV5.Services
             {
                 connection.Open();
 
-                // Получаем текущие данные фильма
                 var getCommand = connection.CreateCommand();
                 getCommand.CommandText = "SELECT VoteCount, Rating FROM Movies WHERE Slug = $slug";
                 getCommand.Parameters.AddWithValue("$slug", movieSlug);
@@ -253,11 +260,9 @@ namespace MovieRecV5.Services
                         int currentVoteCount = reader["VoteCount"] != DBNull.Value ? Convert.ToInt32(reader["VoteCount"]) : 0;
                         float currentRating = reader["Rating"] != DBNull.Value ? Convert.ToSingle(reader["Rating"]) : 0f;
 
-                        // Обновляем рейтинг
                         int newVoteCount = currentVoteCount + 1;
                         float newRating = ((currentRating * currentVoteCount) + userRating) / newVoteCount;
 
-                        // Обновляем запись в базе
                         var updateCommand = connection.CreateCommand();
                         updateCommand.CommandText = @"
                             UPDATE Movies 
@@ -415,11 +420,10 @@ namespace MovieRecV5.Services
                 movie.Genres = new List<string>();
             }
 
-            // Проверяем, просмотрен ли фильм пользователем (если userId > 0)
             if (userId > 0)
             {
                 movie.IsWatched = IsMovieWatched(userId, movie.Slug);
-                movie.InWatchList = IsInWatchList(userId, movie.Slug); // Новый статус
+                movie.InWatchList = IsInWatchList(userId, movie.Slug); 
             }
 
             return movie;
@@ -533,10 +537,17 @@ namespace MovieRecV5.Services
                     connection.Open();
 
                     var command = connection.CreateCommand();
-                    command.CommandText = "INSERT INTO Users (Login, Email, Password) VALUES ($login, $email, $password)";
+                    command.CommandText = @"
+                INSERT INTO Users (Login, DisplayName, Email, Password, AvatarUrl) 
+                VALUES ($login, $displayName, $email, $password, $avatarUrl)";
+
                     command.Parameters.AddWithValue("$login", user.Login);
+                    command.Parameters.AddWithValue("$displayName",
+                        string.IsNullOrEmpty(user.DisplayName) ? user.Login : user.DisplayName);
                     command.Parameters.AddWithValue("$email", user.Email);
                     command.Parameters.AddWithValue("$password", user.Password);
+                    command.Parameters.AddWithValue("$avatarUrl",
+                        string.IsNullOrEmpty(user.AvatarUrl) ? "default" : user.AvatarUrl);
 
                     return command.ExecuteNonQuery() > 0;
                 }
@@ -580,8 +591,10 @@ namespace MovieRecV5.Services
                         {
                             Id = Convert.ToInt32(reader["Id"]),
                             Login = reader["Login"]?.ToString() ?? "",
+                            DisplayName = reader["DisplayName"]?.ToString() ?? "",
                             Email = reader["Email"]?.ToString() ?? "",
-                            Password = reader["Password"]?.ToString() ?? ""
+                            Password = reader["Password"]?.ToString() ?? "",
+                            AvatarUrl = reader["AvatarUrl"]?.ToString() ?? "default"
                         };
                     }
                 }
@@ -608,8 +621,10 @@ namespace MovieRecV5.Services
                         {
                             Id = Convert.ToInt32(reader["Id"]),
                             Login = reader["Login"]?.ToString() ?? "",
+                            DisplayName = reader["DisplayName"]?.ToString() ?? "",
                             Email = reader["Email"]?.ToString() ?? "",
-                            Password = reader["Password"]?.ToString() ?? ""
+                            Password = reader["Password"]?.ToString() ?? "",
+                            AvatarUrl = reader["AvatarUrl"]?.ToString() ?? "default"
                         };
                     }
                 }
@@ -617,7 +632,62 @@ namespace MovieRecV5.Services
             return null;
         }
 
-        // Методы для работы с просмотренными фильмами
+        private void AddDefaultUserIfNotExists()
+        {
+            try
+            {
+                if (!UserExistsByLogin("qwe"))
+                {
+                    var defaultUser = new User
+                    {
+                        Login = "qwe",
+                        DisplayName = "Демо пользователь",
+                        Email = "demo@movierec.local",
+                        Password = User.HashPassword("qweqwe"),
+                        AvatarUrl = "default"
+                    };
+                    AddUser(defaultUser);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error adding default user: {ex.Message}");
+            }
+        }
+
+        public bool UpdateUserProfile(int userId, string displayName, string email, string avatarUrl)
+        {
+            try
+            {
+                using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+                {
+                    connection.Open();
+
+                    var command = connection.CreateCommand();
+                    command.CommandText = @"
+                UPDATE Users 
+                SET DisplayName = $displayName, 
+                    Email = $email, 
+                    AvatarUrl = $avatarUrl
+                WHERE Id = $userId";
+
+                    command.Parameters.AddWithValue("$displayName", displayName);
+                    command.Parameters.AddWithValue("$email", email);
+                    command.Parameters.AddWithValue("$avatarUrl", avatarUrl);
+                    command.Parameters.AddWithValue("$userId", userId);
+
+                    return command.ExecuteNonQuery() > 0;
+                }
+            }
+            catch (SQLiteException ex)
+            {
+                Console.WriteLine($"Error updating user: {ex.Message}");
+                return false;
+            }
+        }
+
+
+        // ПРОСМОТРЕННЫЕ ФИЛЬМЫ
         public void MarkMovieAsWatched(int userId, string movieSlug)
         {
             using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
@@ -712,7 +782,7 @@ namespace MovieRecV5.Services
                     while (reader.Read())
                     {
                         var movie = CreateMovieFromReader(reader, userId);
-                        movie.IsWatched = true; // Всегда true для этого метода
+                        movie.IsWatched = true; 
                         movies.Add(movie);
                     }
                 }

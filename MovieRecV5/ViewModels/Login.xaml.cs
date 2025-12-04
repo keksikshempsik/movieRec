@@ -45,7 +45,7 @@ namespace MovieRecV5.ViewModels
                 pnlRegister.Visibility = Visibility.Visible;
                 btnSubmit.Content = "Зарегистрироваться";
                 Title = "Регистрация";
-                this.Height = 325;
+                this.Height = 350; // Увеличено для нового поля
             }
         }
 
@@ -129,6 +129,17 @@ namespace MovieRecV5.ViewModels
                 throw new Exception("Логин должен содержать минимум 3 символа");
             }
 
+            // Проверка отображаемого имени (новое поле)
+            if (string.IsNullOrWhiteSpace(txtDisplayName.Text))
+            {
+                throw new Exception("Введите отображаемое имя");
+            }
+
+            if (txtDisplayName.Text.Length < 2)
+            {
+                throw new Exception("Отображаемое имя должно содержать минимум 2 символа");
+            }
+
             // Проверка email
             if (string.IsNullOrWhiteSpace(txtEmail.Text))
             {
@@ -161,25 +172,22 @@ namespace MovieRecV5.ViewModels
             var user = new User
             {
                 Login = txtLogin.Text.Trim(),
+                DisplayName = txtDisplayName.Text.Trim(),
                 Password = User.HashPassword(txtPassword.Password),
                 Email = txtEmail.Text.Trim(),
+                AvatarUrl = "default"
             };
 
             if (databaseService.AddUser(user))
             {
-                // ПОЛУЧАЕМ ПОЛНОГО ПОЛЬЗОВАТЕЛЯ ИЗ БАЗЫ ДАННЫХ (С ID)
+                // Получаем пользователя из базы
                 var registeredUser = databaseService.GetUserByLogin(user.Login);
 
                 if (registeredUser != null)
                 {
-
-                    // АВТОМАТИЧЕСКИ ЛОГИНИМ ПОЛЬЗОВАТЕЛЯ
                     mainWindow.LoginUser(registeredUser);
-
-                    // Закрываем окно регистрации
                     this.Close();
 
-                    // СРАЗУ ОТКРЫВАЕМ ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ
                     var profileWindow = new UserProfileWindow(registeredUser, mainWindow)
                     {
                         Owner = mainWindow,

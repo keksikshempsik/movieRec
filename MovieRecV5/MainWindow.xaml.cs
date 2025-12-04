@@ -39,13 +39,28 @@ namespace MovieRecV5
         {
             if (IsLogged && CurrentUser != null)
             {
-                UserProfileButton.Content = "Профиль";
-                UserProfileButton.ToolTip = $"Войти в профиль ({CurrentUser.Login})";
+                // Используем DisplayName вместо Login для отображения
+                string displayName = !string.IsNullOrEmpty(CurrentUser.DisplayName)
+                    ? CurrentUser.DisplayName
+                    : CurrentUser.Login;
+
+                // Ограничиваем длину для кнопки
+                if (displayName.Length > 15)
+                {
+                    displayName = displayName.Substring(0, 12) + "...";
+                }
+
+                UserProfileButton.Content = displayName;
+                UserProfileButton.ToolTip = $"Профиль пользователя: {CurrentUser.Login}";
+
+                // Можно добавить иконку пользователя
+                UserProfileButton.FontWeight = FontWeights.SemiBold;
             }
             else
             {
                 UserProfileButton.Content = "Вход/Регистрация";
                 UserProfileButton.ToolTip = "Войти или зарегистрироваться";
+                UserProfileButton.FontWeight = FontWeights.Normal;
             }
         }
 
@@ -518,6 +533,39 @@ namespace MovieRecV5
             else
             {
                 return Brushes.LightGray; // Серая рамка
+            }
+        }
+
+        public void RefreshUserData()
+        {
+            if (CurrentUser != null)
+            {
+                try
+                {
+                    // Получаем обновленные данные пользователя из базы
+                    var updatedUser = _databaseService.GetUserByLogin(CurrentUser.Login);
+
+                    if (updatedUser != null)
+                    {
+                        // Обновляем текущего пользователя
+                        CurrentUser = updatedUser;
+
+                        // Обновляем кнопку профиля
+                        UpdateUserButton();
+
+                        // Перерисовываем фильмы, чтобы обновить цвета
+                        if (!string.IsNullOrWhiteSpace(SearchTextBox.Text) &&
+                            SearchTextBox.Text != "Введите название...")
+                        {
+                            // Повторяем поиск, чтобы обновить отображение фильмов
+                            SearchButton_Click(null, null);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error refreshing user data: {ex.Message}");
+                }
             }
         }
     }

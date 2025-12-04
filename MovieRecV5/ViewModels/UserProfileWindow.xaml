@@ -39,17 +39,34 @@
             </Grid.ColumnDefinitions>
 
             <!-- Аватар -->
+            <!-- Аватар -->
             <Border Grid.Column="0"
-                    Width="80" 
-                    Height="80"
-                    Background="LightGray"
-                    Margin="0,0,10,0">
-                <TextBlock x:Name="UserInitialsText"
-                           Text="??" 
-                           FontSize="16" 
-                           FontWeight="Bold"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"/>
+        Width="80" 
+        Height="80"
+        Background="LightGray"
+        Margin="0,0,10,0"
+        CornerRadius="40">
+                <!-- Замените TextBlock на Image -->
+                <Image x:Name="UserAvatarImage"
+           Stretch="UniformToFill"
+           HorizontalAlignment="Center"
+           VerticalAlignment="Center">
+                    <!-- Инициализируем с пустым источником -->
+                    <Image.Source>
+                        <DrawingImage>
+                            <DrawingImage.Drawing>
+                                <GeometryDrawing>
+                                    <GeometryDrawing.Geometry>
+                                        <EllipseGeometry Center="40,40" RadiusX="40" RadiusY="40"/>
+                                    </GeometryDrawing.Geometry>
+                                    <GeometryDrawing.Brush>
+                                        <SolidColorBrush Color="LightGray"/>
+                                    </GeometryDrawing.Brush>
+                                </GeometryDrawing>
+                            </DrawingImage.Drawing>
+                        </DrawingImage>
+                    </Image.Source>
+                </Image>
             </Border>
 
             <!-- Информация справа -->
