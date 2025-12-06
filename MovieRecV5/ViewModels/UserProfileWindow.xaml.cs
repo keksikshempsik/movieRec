@@ -21,7 +21,6 @@ namespace MovieRecV5.ViewModels
             this.mainWindow = mainWindow;
             _databaseService = new DatabaseService();
 
-            // Инициализируем аватар
             InitializeAvatar();
 
             LoadUserData();
@@ -32,22 +31,18 @@ namespace MovieRecV5.ViewModels
         {
             try
             {
-                // Проверяем наличие аватара у пользователя
                 if (currentUser != null && !string.IsNullOrEmpty(currentUser.AvatarUrl))
                 {
                     if (currentUser.AvatarUrl == "default")
                     {
-                        // Устанавливаем аватар по умолчанию с инициалами
                         SetDefaultAvatarWithInitials();
                     }
                     else if (File.Exists(currentUser.AvatarUrl))
                     {
-                        // Загружаем из файла
                         LoadAvatarFromFile(currentUser.AvatarUrl);
                     }
                     else if (currentUser.AvatarUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                     {
-                        // Загружаем из URL
                         LoadAvatarFromUrl(currentUser.AvatarUrl);
                     }
                     else
@@ -76,7 +71,7 @@ namespace MovieRecV5.ViewModels
                 bitmap.UriSource = new Uri(filePath, UriKind.Absolute);
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
                 bitmap.EndInit();
-                bitmap.Freeze(); // Важно для безопасности в WPF
+                bitmap.Freeze(); 
                 UserAvatarImage.Source = bitmap;
             }
             catch (Exception ex)
@@ -107,18 +102,15 @@ namespace MovieRecV5.ViewModels
 
         private void SetDefaultAvatarWithInitials()
         {
-            // Создаем аватар с инициалами пользователя
             var drawingVisual = new DrawingVisual();
             using (var drawingContext = drawingVisual.RenderOpen())
             {
-                // Фон
                 drawingContext.DrawEllipse(
                     Brushes.LightGray,
                     new Pen(Brushes.DarkGray, 1),
                     new Point(40, 40),
                     40, 40);
 
-                // Инициалы
                 string initials = GetUserInitials();
                 var formattedText = new FormattedText(
                     initials,
@@ -130,7 +122,6 @@ namespace MovieRecV5.ViewModels
                     96.0
                 );
 
-                // Центрируем текст
                 double x = 40 - formattedText.Width / 2;
                 double y = 40 - formattedText.Height / 2;
                 drawingContext.DrawText(formattedText, new Point(x, y));
@@ -145,11 +136,9 @@ namespace MovieRecV5.ViewModels
 
         private void LoadUserData()
         {
-            // Основная информация
             UserNameText.Text = currentUser?.DisplayName ?? currentUser?.Login ?? "Пользователь";
             UserEmailText.Text = currentUser?.Email ?? "Email не указан";
 
-            // Статистика
             int watchedCount = _databaseService.GetWatchedMoviesCount(currentUser.Id);
             int watchListCount = _databaseService.GetWatchListCount(currentUser.Id);
             int ratingsCount = _databaseService.GetUserRatingsCount(currentUser.Id);
@@ -157,7 +146,7 @@ namespace MovieRecV5.ViewModels
             WatchedCountText.Text = watchedCount.ToString();
             WatchListCountText.Text = watchListCount.ToString();
             RatingsCountText.Text = ratingsCount.ToString();
-            FavoritesCountText.Text = "0"; // Можно добавить функционал избранного
+            FavoritesCountText.Text = "0"; 
 
             // Активность
             string activity = "";
@@ -186,7 +175,6 @@ namespace MovieRecV5.ViewModels
 
             if (name.Length >= 2)
             {
-                // Берем первые две буквы
                 return name.Substring(0, 2).ToUpper();
             }
 
@@ -195,17 +183,13 @@ namespace MovieRecV5.ViewModels
 
         private void LoadWatchedMovies()
         {
-            // Этот метод остается без изменений
             var watchedMovies = _databaseService.GetWatchedMovies(currentUser.Id);
         }
 
-        // ДОБАВЛЕННЫЙ МЕТОД: Обновление аватара после редактирования профиля
         public void RefreshUserAvatar()
         {
-            // Обновляем аватар при изменении профиля
             InitializeAvatar();
 
-            // Также обновляем остальные данные
             LoadUserData();
         }
 
@@ -236,16 +220,13 @@ namespace MovieRecV5.ViewModels
 
             if (editWindow.ShowDialog() == true)
             {
-                // Обновляем данные пользователя из базы
                 var updatedUser = _databaseService.GetUserByLogin(currentUser.Login);
                 if (updatedUser != null)
                 {
                     currentUser = updatedUser;
 
-                    // Обновляем аватар
                     RefreshUserAvatar();
 
-                    // Сообщаем главному окну об изменениях
                     if (mainWindow != null)
                     {
                         mainWindow.RefreshUserData();

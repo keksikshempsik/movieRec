@@ -152,9 +152,6 @@ namespace MovieRecV5.ViewModels
                         UpdatePassword(NewPasswordBox.Password);
                     }
 
-                    MessageBox.Show("Профиль успешно обновлен", "Успех",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
-
                     // Обновляем данные пользователя в текущем объекте
                     currentUser.DisplayName = DisplayNameTextBox.Text.Trim();
                     currentUser.Email = EmailTextBox.Text.Trim();

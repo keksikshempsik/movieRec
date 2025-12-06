@@ -226,7 +226,6 @@ namespace MovieRecV5.ViewModels
 
         private void FindMoviesButton_Click(object sender, RoutedEventArgs e)
         {
-            // Закрываем окно и возвращаемся к главному окну для поиска фильмов
             this.Close();
         }
     }

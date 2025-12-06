@@ -122,13 +122,11 @@ namespace MovieRecV5.ViewModels
 
         private void UpdateStarsAppearance()
         {
-            // Ждем пока ItemsControl создаст визуальные элементы
             if (RatingStars.ItemContainerGenerator.Status != System.Windows.Controls.Primitives.GeneratorStatus.ContainersGenerated)
             {
                 RatingStars.UpdateLayout();
             }
 
-            // Получаем все кнопки-звезды
             starButtons.Clear();
             for (int i = 0; i < RatingStars.Items.Count; i++)
             {
@@ -147,7 +145,6 @@ namespace MovieRecV5.ViewModels
                 }
             }
 
-            // Обновляем внешний вид звезд
             for (int i = 0; i < starButtons.Count; i++)
             {
                 if (i < tempRating)
@@ -179,17 +176,11 @@ namespace MovieRecV5.ViewModels
 
             try
             {
-                // Сохраняем оценку пользователя
                 _databaseService.SaveUserRating(_currentUserId, _movie.Slug, currentRating);
 
-                // Обновляем рейтинг фильма
                 _databaseService.UpdateMovieRating(_movie.Slug, currentRating);
 
-                // Обновляем отображение рейтинга
                 RefreshMovieRating();
-
-                MessageBox.Show($"Спасибо! Ваша оценка: {currentRating} звезд", "Оценка сохранена",
-                              MessageBoxButton.OK, MessageBoxImage.Information);
 
                 SubmitRatingButton.IsEnabled = false;
             }
@@ -202,7 +193,6 @@ namespace MovieRecV5.ViewModels
 
         private void RefreshMovieRating()
         {
-            // Обновляем информацию о фильме из базы данных
             var movies = _databaseService.SearchMoviesInDatabase(_movie.Title);
             var updatedMovie = movies.FirstOrDefault(m => m.Slug == _movie.Slug);
 
@@ -213,8 +203,6 @@ namespace MovieRecV5.ViewModels
                 MovieRating.Text = $"Rating: {_movie.Rating:F1}";
             }
         }
-
-        // Вспомогательный метод для поиска дочерних элементов
         private T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
         {
             for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
@@ -243,14 +231,12 @@ namespace MovieRecV5.ViewModels
 
                 if (_isTranslated)
                 {
-                    // Возвращаем оригинальный текст
                     MovieDescription.Text = _originalDescription;
                     TranslateButton.Content = "🌐 Перевести описание";
                     _isTranslated = false;
                 }
                 else
                 {
-                    // Переводим текст
                     TranslateButton.Content = "⏳ Перевод...";
                     var translateService = new TranslateService();
                     string translatedText = await translateService.TranslateTextAsync(MovieDescription.Text);
@@ -281,7 +267,6 @@ namespace MovieRecV5.ViewModels
             }
         }
 
-        // Добавляем недостающие методы для обработки событий звезд
         private void RatingStars_Loaded(object sender, RoutedEventArgs e)
         {
             UpdateStarsAppearance();
@@ -321,7 +306,6 @@ namespace MovieRecV5.ViewModels
                 WatchedStatusText.Text = "";
             }
 
-            // Также обновляем WatchList кнопку, так как статус просмотра влияет на её отображение
             UpdateWatchListButton();
         }
 
@@ -338,19 +322,14 @@ namespace MovieRecV5.ViewModels
             {
                 if (_isWatched)
                 {
-                    // Убираем отметку
                     _databaseService.UnmarkMovieAsWatched(_currentUserId, _movie.Slug);
                     _isWatched = false;
-                    MessageBox.Show("Фильм удален из списка просмотренных", "Информация",
-                                  MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else
                 {
                     // Добавляем отметку
                     _databaseService.MarkMovieAsWatched(_currentUserId, _movie.Slug);
                     _isWatched = true;
-                    MessageBox.Show("Фильм отмечен как просмотренный!", "Успех",
-                                  MessageBoxButton.OK, MessageBoxImage.Information);
                 }
 
                 UpdateWatchedButton();
@@ -380,23 +359,20 @@ namespace MovieRecV5.ViewModels
         {
             if (_isWatched && _isInWatchList)
             {
-                // Фильм просмотрен и в WatchList (хочет пересмотреть)
                 WatchListButton.Content = "Хочу пересмотреть ✓";
-                WatchListButton.Background = Brushes.LightCoral; // Красный для пересмотра
+                WatchListButton.Background = Brushes.LightCoral;
                 WatchListStatusText.Text = "Хотите пересмотреть этот фильм";
                 WatchListStatusText.Foreground = Brushes.Red;
             }
             else if (_isInWatchList)
             {
-                // Фильм в WatchList (хочет посмотреть)
                 WatchListButton.Content = "В списке 'Хочу посмотреть' ✓";
-                WatchListButton.Background = Brushes.LightYellow; // Желтый для WatchList
+                WatchListButton.Background = Brushes.LightYellow; 
                 WatchListStatusText.Text = "Фильм добавлен в список 'Хочу посмотреть'";
                 WatchListStatusText.Foreground = Brushes.Orange;
             }
             else
             {
-                // Не в WatchList
                 WatchListButton.Content = "Хочу посмотреть";
                 WatchListButton.Background = Brushes.LightYellow;
                 WatchListStatusText.Text = "";
@@ -419,16 +395,12 @@ namespace MovieRecV5.ViewModels
                     // Удаляем из WatchList
                     _databaseService.RemoveFromWatchList(_currentUserId, _movie.Slug);
                     _isInWatchList = false;
-                    MessageBox.Show("Фильм удален из списка 'Хочу посмотреть'", "Информация",
-                                  MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else
                 {
                     // Добавляем в WatchList
                     _databaseService.AddToWatchList(_currentUserId, _movie.Slug);
                     _isInWatchList = true;
-                    MessageBox.Show("Фильм добавлен в список 'Хочу посмотреть'!", "Успех",
-                                  MessageBoxButton.OK, MessageBoxImage.Information);
                 }
 
                 UpdateWatchListButton();
