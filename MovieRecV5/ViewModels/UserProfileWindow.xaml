@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Профиль пользователя" Height="500" Width="600"
+        Title="Профиль пользователя" Height="760" Width="900"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize">
 
@@ -39,19 +39,16 @@
             </Grid.ColumnDefinitions>
 
             <!-- Аватар -->
-            <!-- Аватар -->
             <Border Grid.Column="0"
-        Width="80" 
-        Height="80"
-        Background="LightGray"
-        Margin="0,0,10,0"
-        CornerRadius="40">
-                <!-- Замените TextBlock на Image -->
+                    Width="80" 
+                    Height="80"
+                    Background="LightGray"
+                    Margin="0,0,10,0"
+                    CornerRadius="40">
                 <Image x:Name="UserAvatarImage"
-           Stretch="UniformToFill"
-           HorizontalAlignment="Center"
-           VerticalAlignment="Center">
-                    <!-- Инициализируем с пустым источником -->
+                       Stretch="UniformToFill"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center">
                     <Image.Source>
                         <DrawingImage>
                             <DrawingImage.Drawing>
@@ -83,18 +80,18 @@
             </StackPanel>
         </Grid>
 
-        <!-- Статистика и действия -->
+        <!-- Статистика -->
         <Grid Grid.Row="2" Margin="0,0,0,10">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- Статистика -->
-            <StackPanel Grid.Row="0" Margin="0,0,0,10">
-                <TextBlock Text="Статистика:" 
+            <!-- Основная статистика -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,15">
+                <TextBlock Text="Статистика просмотров:" 
                            FontWeight="Bold" 
+                           FontSize="14"
                            Margin="0,0,0,5"/>
 
                 <Grid>
@@ -121,64 +118,96 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="3" Orientation="Vertical" HorizontalAlignment="Center">
-                        <TextBlock Text="Избранное" FontSize="11" Foreground="Gray" HorizontalAlignment="Center"/>
-                        <TextBlock x:Name="FavoritesCountText" Text="0" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Средняя оценка" FontSize="11" Foreground="Gray" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="AvgRatingText" Text="0.0" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Grid>
             </StackPanel>
 
-            <!-- Действия -->
-            <StackPanel Grid.Row="1" Margin="0,0,0,10">
-                <TextBlock Text="Действия:" 
-                           FontWeight="Bold" 
-                           Margin="0,0,0,5"/>
+            <!-- Диаграммы -->
+            <Grid Grid.Row="1" Margin="0,15,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                <StackPanel>
-                    <Button Content="Редактировать профиль" 
-                            Click="EditProfileButton_Click"
-                            Width="150"
-                            Height="25"
-                            Margin="0,2"/>
+                <!-- 1. Жанры -->
+                <StackPanel Grid.Row="0" Margin="0,0,0,15">
+                    <TextBlock Text="Популярные жанры (по первому жанру фильма)" 
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,5"/>
 
-                    <!-- ДОБАВЛЕНА КНОПКА ДЛЯ WATCHLIST -->
-                    <Button Content="Хочу посмотреть" 
-                            Click="WatchListButton_Click"
-                            Width="150"
-                            Height="25"
-                            Margin="0,2"/>
+                    <Grid x:Name="GenresGrid" 
+                          Height="100"
+                          Margin="5,0,5,0">
+                        <!-- Столбцы будут добавлены динамически -->
+                    </Grid>
 
-                    <Button Content="Просмотренные фильмы" 
-                            Click="HistoryButton_Click"
-                            Width="150"
-                            Height="25"
-                            Margin="0,2"/>
-
-                    <Button Content="Настройки" 
-                            Click="SettingsButton_Click"
-                            Width="150"
-                            Height="25"
-                            Margin="0,2"/>
+                    <TextBlock x:Name="GenresSummaryText" 
+                               FontSize="11" 
+                               Foreground="Gray"
+                               TextWrapping="Wrap"/>
                 </StackPanel>
-            </StackPanel>
 
-            <!-- Недавняя активность -->
-            <StackPanel Grid.Row="2">
-                <TextBlock Text="Недавняя активность:" 
-                           FontWeight="Bold" 
-                           Margin="0,0,0,5"/>
+                <!-- 2. Годы -->
+                <StackPanel Grid.Row="1" Margin="0,0,0,15">
+                    <TextBlock Text="Популярные годы выпуска фильмов" 
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,5"/>
 
-                <TextBox x:Name="ActivityText" 
-                         TextWrapping="Wrap" 
-                         FontSize="12"
-                         Height="100"
-                         IsReadOnly="True"
-                         VerticalScrollBarVisibility="Auto"
-                         Text="Активность отсутствует"/>
-            </StackPanel>
+                    <Grid x:Name="YearsGrid" 
+                          Height="100"
+                          Margin="5,0,5,0">
+                        <!-- Столбцы будут добавлены динамически -->
+                    </Grid>
+
+                    <TextBlock x:Name="YearsSummaryText" 
+                               FontSize="11" 
+                               Foreground="Gray"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <!-- 3. Оценки -->
+                <StackPanel Grid.Row="2" Margin="0,0,0,15">
+                    <TextBlock Text="Распределение оценок (от 1 до 10)" 
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,5"/>
+
+                    <Grid x:Name="RatingsGrid" 
+                          Height="100"
+                          Margin="5,0,5,0">
+                        <!-- Столбцы будут добавлены динамически -->
+                    </Grid>
+
+                    <TextBlock x:Name="RatingsSummaryText" 
+                               FontSize="11" 
+                               Foreground="Gray"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </Grid>
         </Grid>
 
-        <!-- Кнопка выхода -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+        <!-- Действия -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,10,0,0">
+            <Button Content="Редактировать профиль" 
+                    Click="EditProfileButton_Click"
+                    Width="150"
+                    Height="25"
+                    Margin="0,0,10,0"/>
+
+            <Button Content="Хочу посмотреть" 
+                    Click="WatchListButton_Click"
+                    Width="150"
+                    Height="25"
+                    Margin="0,0,10,0"/>
+
+            <Button Content="Просмотренные фильмы" 
+                    Click="HistoryButton_Click"
+                    Width="150"
+                    Height="25"
+                    Margin="0,0,10,0"/>
+
             <Button x:Name="LogoutButton"
                     Content="Выйти из аккаунта" 
                     Click="LogoutButton_Click"

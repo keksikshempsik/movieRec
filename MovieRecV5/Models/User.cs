@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -8,10 +10,24 @@ namespace MovieRecV5.Models
     {
         public int Id;
         public string Login;
-        public string DisplayName; // Новое поле: отображаемое имя
+        public string DisplayName;
         public string Password;
         public string Email;
-        public string AvatarUrl; // Новое поле: ссылка на аватар
+        public string AvatarUrl;
+
+        public class UserStats
+        {
+            public Dictionary<string, int> GenreDistribution { get; set; } = new();
+            public Dictionary<int, int> YearDistribution { get; set; } = new();
+            public Dictionary<int, int> RatingDistribution { get; set; } = new();
+            public List<RatingDatePoint> RatingTimeline { get; set; } = new();
+        }
+
+        public class RatingDatePoint
+        {
+            public DateTime Date { get; set; }
+            public int Rating { get; set; }
+        }
 
         public static string HashPassword(string password)
         {

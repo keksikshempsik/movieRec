@@ -803,5 +803,120 @@ namespace MovieRecV5.Services
                 return Convert.ToInt32(command.ExecuteScalar());
             }
         }
+
+        // СТАТИСТИКА
+
+        public User.UserStats GetUserStats(int userId)
+        {
+            var stats = new User.UserStats();
+
+            using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = @"
+            SELECT m.Genres 
+            FROM Movies m
+            INNER JOIN WatchedMovies wm ON m.Slug = wm.MovieSlug
+            WHERE wm.UserId = $userId";
+
+                command.Parameters.AddWithValue("$userId", userId);
+
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        string genresJson = reader["Genres"]?.ToString();
+                        if (!string.IsNullOrEmpty(genresJson))
+                        {
+                            try
+                            {
+                                var genres = JsonSerializer.Deserialize<List<string>>(genresJson);
+                                if (genres != null && genres.Count > 0)
+                                {
+                                    var firstGenre = genres[0];
+                                    if (stats.GenreDistribution.ContainsKey(firstGenre))
+                                        stats.GenreDistribution[firstGenre]++;
+                                    else
+                                        stats.GenreDistribution[firstGenre] = 1;
+                                }
+                            }
+                            catch { /* ignore */ }
+                        }
+                    }
+                }
+
+                command = connection.CreateCommand();
+                command.CommandText = @"
+            SELECT m.Year, COUNT(*) as Count
+            FROM Movies m
+            INNER JOIN WatchedMovies wm ON m.Slug = wm.MovieSlug
+            WHERE wm.UserId = $userId
+            GROUP BY m.Year
+            ORDER BY Count DESC";
+
+                command.Parameters.AddWithValue("$userId", userId);
+
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        int year = Convert.ToInt32(reader["Year"]);
+                        int count = Convert.ToInt32(reader["Count"]);
+                        stats.YearDistribution[year] = count;
+                    }
+                }
+
+                command = connection.CreateCommand();
+                command.CommandText = @"
+            SELECT ur.Rating, COUNT(*) as Count
+            FROM UserRatings ur
+            INNER JOIN WatchedMovies wm ON ur.UserId = wm.UserId AND ur.MovieSlug = wm.MovieSlug
+            WHERE ur.UserId = $userId
+            GROUP BY ur.Rating
+            ORDER BY ur.Rating";
+
+                command.Parameters.AddWithValue("$userId", userId);
+
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        int rating = Convert.ToInt32(reader["Rating"]);
+                        int count = Convert.ToInt32(reader["Count"]);
+                        stats.RatingDistribution[rating] = count;
+                    }
+                }
+
+                command = connection.CreateCommand();
+                command.CommandText = @"
+            SELECT ur.Rating, ur.CreatedAt
+            FROM UserRatings ur
+            INNER JOIN WatchedMovies wm ON ur.UserId = wm.UserId AND ur.MovieSlug = wm.MovieSlug
+            WHERE ur.UserId = $userId
+            ORDER BY ur.CreatedAt";
+
+                command.Parameters.AddWithValue("$userId", userId);
+
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        if (reader["CreatedAt"] != DBNull.Value)
+                        {
+                            var point = new User.RatingDatePoint
+                            {
+                                Rating = Convert.ToInt32(reader["Rating"]),
+                                Date = Convert.ToDateTime(reader["CreatedAt"])
+                            };
+                            stats.RatingTimeline.Add(point);
+                        }
+                    }
+                }
+            }
+
+            return stats;
+        }
     }
 }
