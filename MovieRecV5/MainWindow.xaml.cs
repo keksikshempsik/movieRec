@@ -110,7 +110,7 @@ namespace MovieRecV5
             try
             {
                 SetProgressStatus(true);
-                LetterboxdParser parser = new LetterboxdParser();
+                TmdbParser parser = new TmdbParser();
 
                 if (SearchTextBox.Text == "Введите название..." || string.IsNullOrWhiteSpace(SearchTextBox.Text))
                 {
@@ -138,25 +138,12 @@ namespace MovieRecV5
 
                 List<Movie> movies = new List<Movie>(moviesFromDb);
 
-                // 2. Ограниченный онлайн-поиск
-                var baseSlug = parser.ConvertToSlug(searchTitle);
-                var possibleSlugs = GenerateSlugsWithYears(baseSlug).Take(15);
-                Console.WriteLine($"🔄 Поиск {possibleSlugs.Count()} slugs");
-
-                var onlineTasks = new List<Task<Movie>>();
-
-                foreach (var slug in possibleSlugs)
-                {
-                    if (movies.Any(m => m.Slug == slug)) continue;
-
-                    onlineTasks.Add(TryGetMovieWithThrottle(slug, parser));
-                }
-
-                var onlineResults = await Task.WhenAll(onlineTasks);
-                var newMovies = onlineResults.Where(m => m != null).ToList();
+                // 2. Поиск в TMDB онлайн
+                Console.WriteLine($"🔄 Поиск в TMDB");
+                var onlineMovies = await parser.SearchAllMovies(searchTitle, null); // null = без указания года
 
                 // Сохраняем найденные фильмы в базу
-                foreach (var movie in newMovies)
+                foreach (var movie in onlineMovies)
                 {
                     if (!_databaseService.MovieExists(movie.Slug))
                     {
@@ -164,7 +151,7 @@ namespace MovieRecV5
                     }
                 }
 
-                movies.AddRange(newMovies);
+                movies.AddRange(onlineMovies);
 
                 // 3. Проверяем для всех фильмов, просмотрены ли они текущим пользователем
                 foreach (var movie in movies)
@@ -172,6 +159,7 @@ namespace MovieRecV5
                     if (userId > 0)
                     {
                         movie.IsWatched = _databaseService.IsMovieWatched(userId, movie.Slug);
+                        movie.InWatchList = _databaseService.IsInWatchList(userId, movie.Slug);
                     }
                 }
 
@@ -203,48 +191,23 @@ namespace MovieRecV5
             }
         }
 
-        private async Task<Movie> TryGetMovieWithThrottle(string slug, LetterboxdParser parser)
-        {
-            await _throttler.WaitAsync();
-            try
-            {
-                Console.WriteLine($"🌐 Парсим: {slug}");
-                return await parser.TryParseMovie(slug);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Ошибка {slug}: {ex.Message}");
-                return null;
-            }
-            finally
-            {
-                _throttler.Release();
-            }
-        }
+        // ЭТОТ МЕТОД БОЛЬШЕ НЕ НУЖЕН, ТАК КАК ИСПОЛЬЗУЕМ SearchAllMovies
+        // private async Task<Movie> TryGetMovieWithThrottle(string slug, TmdbParser parser)
+        // {
+        //     // Устаревший метод, больше не нужен
+        //     return null;
+        // }
 
-        private List<string> GenerateSlugsWithYears(string baseSlug)
-        {
-            var slugs = new List<string> { baseSlug };
-
-            var keyYears = new[] {
-                2025, 2024, 2023, 2022, 2021, 
-                2019, 2018, 2017, 2016, 2015,
-                2012, 2010, 2008, 2005, 2000,
-                1999, 1998, 1995, 1990, 2020,
-                1980, 1982, 1970, 1960, 1950
-            };
-
-            foreach (var year in keyYears)
-            {
-                slugs.Add($"{baseSlug}-{year}");
-            }
-
-            return slugs.Distinct().ToList();
-        }
+        // ЭТОТ МЕТОД БОЛЬШЕ НЕ НУЖЕН, ТАК КАК TMDB ВОЗВРАЩАЕТ ГОД В САМИХ РЕЗУЛЬТАТАХ
+        // private List<string> GenerateSlugsWithYears(string baseSlug)
+        // {
+        //     // Устаревший метод, больше не нужен
+        //     return new List<string>();
+        // }
 
         private void DisplayMovies(List<Movie> movies)
         {
-            MoviesPanel.Children.Clear(); // Изменил с MoviesGrid на MoviesPanel
+            MoviesPanel.Children.Clear();
 
             if (movies == null || !movies.Any())
             {
