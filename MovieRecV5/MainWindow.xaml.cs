@@ -110,7 +110,6 @@ namespace MovieRecV5
             try
             {
                 SetProgressStatus(true);
-                TmdbParser parser = new TmdbParser();
 
                 if (SearchTextBox.Text == "Введите название..." || string.IsNullOrWhiteSpace(SearchTextBox.Text))
                 {
@@ -121,40 +120,73 @@ namespace MovieRecV5
                 string searchTitle = SearchTextBox.Text.Trim();
                 Console.WriteLine($"🔍 Поиск: '{searchTitle}'");
 
-                // Передаем ID текущего пользователя при поиске в базе
+                // 1. ВСЕГДА ищем сначала в базе данных (фильмы с постерами)
                 int userId = CurrentUser?.Id ?? 0;
                 var moviesFromDb = _databaseService.GetMoviesFromDatabase(searchTitle, userId);
 
+                // Фильтруем фильмы без постера (если такие есть в базе)
+                moviesFromDb = moviesFromDb
+                    .Where(m => !string.IsNullOrEmpty(m.Poster) && m.Poster != "null")
+                    .ToList();
+
+                Console.WriteLine($"📁 Найдено в базе: {moviesFromDb.Count} фильмов (с постерами)");
+
+                List<Movie> finalMovies = new List<Movie>();
+
                 if (moviesFromDb.Count >= 4)
                 {
-                    Console.WriteLine($"📁 Найдено в базе: {moviesFromDb.Count} фильмов");
-                    var sortedMovies = moviesFromDb
+                    // Если в базе достаточно фильмов - используем только их
+                    finalMovies = moviesFromDb
                         .OrderByDescending(m => m.VoteCount)
                         .Take(8)
                         .ToList();
-                    DisplayMovies(sortedMovies);
-                    return;
                 }
-
-                List<Movie> movies = new List<Movie>(moviesFromDb);
-
-                // 2. Поиск в TMDB онлайн
-                Console.WriteLine($"🔄 Поиск в TMDB");
-                var onlineMovies = await parser.SearchAllMovies(searchTitle, null); // null = без указания года
-
-                // Сохраняем найденные фильмы в базу
-                foreach (var movie in onlineMovies)
+                else
                 {
-                    if (!_databaseService.MovieExists(movie.Slug))
+                    // Если в базе мало фильмов - добавляем результаты из TMDB
+                    TmdbParser parser = new TmdbParser();
+
+                    // Сначала используем все фильмы из базы
+                    finalMovies.AddRange(moviesFromDb);
+
+                    // Потом ищем в TMDB (только фильмы с постерами)
+                    var onlineMovies = await parser.SearchAllMovies(searchTitle, null);
+
+                    if (onlineMovies.Any())
                     {
-                        _databaseService.AddMovie(movie);
+                        // Фильтруем те фильмы, которых нет в базе
+                        var newMovies = onlineMovies
+                            .Where(onlineMovie => !moviesFromDb.Any(dbMovie =>
+                                dbMovie.Title == onlineMovie.Title && dbMovie.Year == onlineMovie.Year))
+                            .ToList();
+
+                        Console.WriteLine($"🌐 Найдено новых в TMDB: {newMovies.Count} фильмов (с постерами)");
+
+                        // Сохраняем новые фильмы в базу
+                        foreach (var movie in newMovies)
+                        {
+                            if (!_databaseService.MovieExists(movie.Slug))
+                            {
+                                _databaseService.AddMovie(movie);
+                            }
+                        }
+
+                        // Добавляем новые фильмы к результатам
+                        finalMovies.AddRange(newMovies);
                     }
+
+                    // Берем топ-8
+                    finalMovies = finalMovies
+                        .GroupBy(m => m.Slug)
+                        .Select(g => g.First())
+                        .OrderByDescending(m => m.VoteCount)
+                        .ThenByDescending(m => m.Year)
+                        .Take(8)
+                        .ToList();
                 }
 
-                movies.AddRange(onlineMovies);
-
-                // 3. Проверяем для всех фильмов, просмотрены ли они текущим пользователем
-                foreach (var movie in movies)
+                // Проверяем для всех фильмов, просмотрены ли они текущим пользователем
+                foreach (var movie in finalMovies)
                 {
                     if (userId > 0)
                     {
@@ -163,27 +195,20 @@ namespace MovieRecV5
                     }
                 }
 
-                // 4. Показываем результаты
-                if (!movies.Any())
+                // Показываем результаты
+                if (!finalMovies.Any())
                 {
                     MessageBox.Show("Фильмы не найдены.");
                     return;
                 }
 
-                var finalMovies = movies
-                    .GroupBy(m => m.Slug)
-                    .Select(g => g.First())
-                    .OrderByDescending(m => m.VoteCount)
-                    .ThenByDescending(m => m.Year)
-                    .Take(8)
-                    .ToList();
-
-                Console.WriteLine($"🎬 Найдено: {finalMovies.Count} фильмов");
+                Console.WriteLine($"🎬 Итоговый список: {finalMovies.Count} фильмов (с постерами)");
                 DisplayMovies(finalMovies);
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Ошибка: {ex.Message}");
+                Console.WriteLine($"❌ Ошибка поиска: {ex}");
             }
             finally
             {
@@ -191,19 +216,6 @@ namespace MovieRecV5
             }
         }
 
-        // ЭТОТ МЕТОД БОЛЬШЕ НЕ НУЖЕН, ТАК КАК ИСПОЛЬЗУЕМ SearchAllMovies
-        // private async Task<Movie> TryGetMovieWithThrottle(string slug, TmdbParser parser)
-        // {
-        //     // Устаревший метод, больше не нужен
-        //     return null;
-        // }
-
-        // ЭТОТ МЕТОД БОЛЬШЕ НЕ НУЖЕН, ТАК КАК TMDB ВОЗВРАЩАЕТ ГОД В САМИХ РЕЗУЛЬТАТАХ
-        // private List<string> GenerateSlugsWithYears(string baseSlug)
-        // {
-        //     // Устаревший метод, больше не нужен
-        //     return new List<string>();
-        // }
 
         private void DisplayMovies(List<Movie> movies)
         {
