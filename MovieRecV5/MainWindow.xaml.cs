@@ -244,12 +244,44 @@ namespace MovieRecV5
 
         private Button CreateMovieButton(Movie movie)
         {
+            Brush backgroundColor;
+            Brush borderColor;
+
+            bool isInWatchList = CurrentUser != null &&
+                                 _databaseService.IsInWatchList(CurrentUser.Id, movie.Slug);
+            bool isWatched = CurrentUser != null &&
+                             _databaseService.IsMovieWatched(CurrentUser.Id, movie.Slug);
+
+            movie.IsWatched = isWatched;
+            movie.InWatchList = isInWatchList;
+
+            if (isWatched && isInWatchList)
+            {
+                backgroundColor = Brushes.LightCoral;
+                borderColor = Brushes.Red;
+            }
+            else if (isInWatchList)
+            {
+                backgroundColor = Brushes.LightYellow;
+                borderColor = Brushes.Orange;
+            }
+            else if (isWatched)
+            {
+                backgroundColor = Brushes.LightGreen;
+                borderColor = Brushes.Green;
+            }
+            else
+            {
+                backgroundColor = Brushes.White;
+                borderColor = Brushes.LightGray;
+            }
+
             var button = new Button
             {
                 Margin = new Thickness(10),
                 Padding = new Thickness(0),
-                Background = GetMovieBackground(movie),
-                BorderBrush = GetMovieBorderColor(movie),
+                Background = backgroundColor,
+                BorderBrush = borderColor,
                 BorderThickness = new Thickness(2),
                 Cursor = Cursors.Hand,
                 Width = 160,
@@ -262,7 +294,6 @@ namespace MovieRecV5
                 HorizontalAlignment = HorizontalAlignment.Center
             };
 
-            // Контейнер для постера
             var posterContainer = new Border
             {
                 Width = 140,
@@ -274,8 +305,20 @@ namespace MovieRecV5
             };
             stackPanel.Children.Add(posterContainer);
 
-            // Иконка просмотра (если фильм просмотрен)
-            if (movie.IsWatched)
+            if (isWatched && isInWatchList)
+            {
+                var statusIcon = new TextBlock
+                {
+                    Text = "⚠️ Несоответствие",
+                    FontSize = 9,
+                    Foreground = Brushes.Red,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Margin = new Thickness(0, 2, 0, 0),
+                    FontWeight = FontWeights.Bold
+                };
+                stackPanel.Children.Add(statusIcon);
+            }
+            else if (isWatched)
             {
                 var watchedIcon = new TextBlock
                 {
@@ -288,8 +331,20 @@ namespace MovieRecV5
                 };
                 stackPanel.Children.Add(watchedIcon);
             }
+            else if (isInWatchList)
+            {
+                var watchlistIcon = new TextBlock
+                {
+                    Text = "📋 В списке",
+                    FontSize = 10,
+                    Foreground = Brushes.Orange,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Margin = new Thickness(0, 2, 0, 0),
+                    FontWeight = FontWeights.Bold
+                };
+                stackPanel.Children.Add(watchlistIcon);
+            }
 
-            // Текстовая информация
             var textContainer = new StackPanel
             {
                 Margin = new Thickness(5, 8, 5, 5),
@@ -297,7 +352,6 @@ namespace MovieRecV5
                 Width = 140
             };
 
-            // Название и год
             var titleText = new TextBlock
             {
                 Text = $"{movie.Title} ({movie.Year})",
@@ -310,7 +364,6 @@ namespace MovieRecV5
             };
             textContainer.Children.Add(titleText);
 
-            // Рейтинг
             var ratingText = new TextBlock
             {
                 Text = $"★ {movie.Rating:F1}/10",
@@ -322,7 +375,6 @@ namespace MovieRecV5
             };
             textContainer.Children.Add(ratingText);
 
-            // Жанры
             if (movie.Genres != null && movie.Genres.Any())
             {
                 var genresText = new TextBlock

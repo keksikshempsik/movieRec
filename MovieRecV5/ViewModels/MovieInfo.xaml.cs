@@ -322,17 +322,22 @@ namespace MovieRecV5.ViewModels
             {
                 if (_isWatched)
                 {
+                    // Если уже просмотрено - снимаем отметку
                     _databaseService.UnmarkMovieAsWatched(_currentUserId, _movie.Slug);
                     _isWatched = false;
                 }
                 else
                 {
-                    // Добавляем отметку
+                    // Добавляем отметку (и автоматически удаляем из WatchList)
                     _databaseService.MarkMovieAsWatched(_currentUserId, _movie.Slug);
                     _isWatched = true;
+
+                    // Обновляем статус WatchList
+                    _isInWatchList = false; // Фильм больше не в WatchList
                 }
 
                 UpdateWatchedButton();
+                UpdateWatchListButton(); // Обновляем кнопку WatchList
             }
             catch (Exception ex)
             {
@@ -346,6 +351,14 @@ namespace MovieRecV5.ViewModels
             if (_currentUserId > 0)
             {
                 _isInWatchList = _databaseService.IsInWatchList(_currentUserId, _movie.Slug);
+
+                // Если фильм просмотрен, но все еще в WatchList - убираем из WatchList
+                if (_isWatched && _isInWatchList)
+                {
+                    _databaseService.RemoveFromWatchList(_currentUserId, _movie.Slug);
+                    _isInWatchList = false;
+                }
+
                 UpdateWatchListButton();
             }
             else
@@ -359,6 +372,7 @@ namespace MovieRecV5.ViewModels
         {
             if (_isWatched && _isInWatchList)
             {
+                // Этого состояния теперь не должно быть, т.к. при отметке просмотра фильм удаляется из WatchList
                 WatchListButton.Content = "Хочу пересмотреть ✓";
                 WatchListButton.Background = Brushes.LightCoral;
                 WatchListStatusText.Text = "Хотите пересмотреть этот фильм";
@@ -366,13 +380,23 @@ namespace MovieRecV5.ViewModels
             }
             else if (_isInWatchList)
             {
+                // Фильм в WatchList, но не просмотрен
                 WatchListButton.Content = "В списке 'Хочу посмотреть' ✓";
-                WatchListButton.Background = Brushes.LightYellow; 
+                WatchListButton.Background = Brushes.LightYellow;
                 WatchListStatusText.Text = "Фильм добавлен в список 'Хочу посмотреть'";
                 WatchListStatusText.Foreground = Brushes.Orange;
             }
+            else if (_isWatched)
+            {
+                // Фильм просмотрен, можно добавить в WatchList для повторного просмотра
+                WatchListButton.Content = "Хочу пересмотреть";
+                WatchListButton.Background = Brushes.LightBlue; // Синий для "хочу пересмотреть"
+                WatchListStatusText.Text = "Добавить для повторного просмотра";
+                WatchListStatusText.Foreground = Brushes.Blue;
+            }
             else
             {
+                // Фильм не просмотрен и не в WatchList
                 WatchListButton.Content = "Хочу посмотреть";
                 WatchListButton.Background = Brushes.LightYellow;
                 WatchListStatusText.Text = "";
@@ -398,7 +422,7 @@ namespace MovieRecV5.ViewModels
                 }
                 else
                 {
-                    // Добавляем в WatchList
+                    // Добавляем в WatchList (даже если фильм просмотрен)
                     _databaseService.AddToWatchList(_currentUserId, _movie.Slug);
                     _isInWatchList = true;
                 }

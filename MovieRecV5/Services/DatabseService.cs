@@ -694,15 +694,39 @@ namespace MovieRecV5.Services
             {
                 connection.Open();
 
-                var command = connection.CreateCommand();
-                command.CommandText = @"
+                // Начинаем транзакцию
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        // 1. Отмечаем фильм как просмотренный
+                        var command = connection.CreateCommand();
+                        command.CommandText = @"
                 INSERT OR IGNORE INTO WatchedMovies (UserId, MovieSlug)
                 VALUES ($userId, $movieSlug)";
 
-                command.Parameters.AddWithValue("$userId", userId);
-                command.Parameters.AddWithValue("$movieSlug", movieSlug);
+                        command.Parameters.AddWithValue("$userId", userId);
+                        command.Parameters.AddWithValue("$movieSlug", movieSlug);
+                        command.ExecuteNonQuery();
 
-                command.ExecuteNonQuery();
+                        // 2. УДАЛЯЕМ из WatchList если он там был
+                        command = connection.CreateCommand();
+                        command.CommandText = @"
+                DELETE FROM WatchList 
+                WHERE UserId = $userId AND MovieSlug = $movieSlug";
+
+                        command.Parameters.AddWithValue("$userId", userId);
+                        command.Parameters.AddWithValue("$movieSlug", movieSlug);
+                        command.ExecuteNonQuery();
+
+                        transaction.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
             }
         }
 
