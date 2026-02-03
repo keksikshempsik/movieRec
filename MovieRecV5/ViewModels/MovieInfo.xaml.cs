@@ -1,13 +1,14 @@
 ﻿using Amazon.Translate;
+using MovieRecV5.Models;
+using MovieRecV5.Services;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
-using System.Collections.Generic;
-using System.Linq;
+using System.Windows.Input;
 using System.Windows.Media;
-using MovieRecV5.Models;
-using MovieRecV5.Services;
 
 namespace MovieRecV5.ViewModels
 {
@@ -72,9 +73,46 @@ namespace MovieRecV5.ViewModels
 
         private void InitializeRatingStars()
         {
-            // Создаем 10 звезд
             var starValues = Enumerable.Range(1, 10).ToList();
             RatingStars.ItemsSource = starValues;
+
+            // Добавляем обработчик двойного клика для сброса оценки
+            foreach (var item in RatingStars.Items)
+            {
+                var container = RatingStars.ItemContainerGenerator.ContainerFromItem(item);
+                if (container is ContentPresenter contentPresenter)
+                {
+                    var button = FindVisualChild<Button>(contentPresenter);
+                    if (button != null)
+                    {
+                        button.MouseDoubleClick += StarButton_DoubleClick;
+                    }
+                }
+            }
+        }
+
+        private void StarButton_DoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (currentRating > 0 && _isWatched)
+            {
+                var result = MessageBox.Show("Сбросить оценку? Это также снимет отметку о просмотре.",
+                                           "Подтверждение",
+                                           MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    _databaseService.UnmarkMovieAsWatched(_currentUserId, _movie.Slug);
+
+                    _isWatched = false;
+                    currentRating = 0;
+                    tempRating = 0;
+
+                    UpdateWatchedButton();
+                    UpdateStarsAppearance();
+                    UpdateRatingText();
+                    SubmitRatingButton.IsEnabled = true;
+                }
+            }
         }
 
         private void LoadUserRating()
@@ -88,7 +126,14 @@ namespace MovieRecV5.ViewModels
                     tempRating = currentRating;
                     UpdateStarsAppearance();
                     UpdateRatingText();
-                    SubmitRatingButton.IsEnabled = false; // Оценка уже сохранена
+                    SubmitRatingButton.IsEnabled = false;
+
+                    if (!_isWatched)
+                    {
+                        _databaseService.MarkMovieAsWatched(_currentUserId, _movie.Slug);
+                        _isWatched = true;
+                        UpdateWatchedButton();
+                    }
                 }
             }
         }
@@ -180,9 +225,25 @@ namespace MovieRecV5.ViewModels
 
                 _databaseService.UpdateMovieRating(_movie.Slug, currentRating);
 
+                if (!_isWatched)
+                {
+                    _databaseService.MarkMovieAsWatched(_currentUserId, _movie.Slug);
+                    _isWatched = true;
+                }
+
+                if (_isInWatchList)
+                {
+                    _isInWatchList = false;
+                }
+
+                UpdateWatchedButton();
+                UpdateWatchListButton();
+
                 RefreshMovieRating();
 
                 SubmitRatingButton.IsEnabled = false;
+                UpdateStarsAppearance();
+
             }
             catch (Exception ex)
             {
@@ -322,22 +383,25 @@ namespace MovieRecV5.ViewModels
             {
                 if (_isWatched)
                 {
-                    // Если уже просмотрено - снимаем отметку
                     _databaseService.UnmarkMovieAsWatched(_currentUserId, _movie.Slug);
                     _isWatched = false;
+
+                    currentRating = 0;
+                    tempRating = 0;
+                    UpdateStarsAppearance();
+                    UpdateRatingText();
+                    SubmitRatingButton.IsEnabled = true;
                 }
                 else
                 {
-                    // Добавляем отметку (и автоматически удаляем из WatchList)
                     _databaseService.MarkMovieAsWatched(_currentUserId, _movie.Slug);
                     _isWatched = true;
 
-                    // Обновляем статус WatchList
-                    _isInWatchList = false; // Фильм больше не в WatchList
+                    _isInWatchList = false;
                 }
 
                 UpdateWatchedButton();
-                UpdateWatchListButton(); // Обновляем кнопку WatchList
+                UpdateWatchListButton();
             }
             catch (Exception ex)
             {
@@ -416,13 +480,11 @@ namespace MovieRecV5.ViewModels
             {
                 if (_isInWatchList)
                 {
-                    // Удаляем из WatchList
                     _databaseService.RemoveFromWatchList(_currentUserId, _movie.Slug);
                     _isInWatchList = false;
                 }
                 else
                 {
-                    // Добавляем в WatchList (даже если фильм просмотрен)
                     _databaseService.AddToWatchList(_currentUserId, _movie.Slug);
                     _isInWatchList = true;
                 }
