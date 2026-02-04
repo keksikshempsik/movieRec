@@ -275,8 +275,7 @@ namespace MovieRecV5.Services
             return movies;
         }
 
-        // Конвертация в slug
-        public string ConvertToSlug(string title)
+        private string ConvertToSlug(string title)
         {
             if (string.IsNullOrEmpty(title))
                 return string.Empty;
@@ -294,7 +293,7 @@ namespace MovieRecV5.Services
 
             var slug = cleanTitle.ToLower()
                 .Replace(" ", "-")
-                .Replace(":", "")
+                .Replace(":", "-")
                 .Replace("'", "")
                 .Replace("\"", "")
                 .Replace("!", "")
@@ -303,12 +302,12 @@ namespace MovieRecV5.Services
                 .Replace(",", "")
                 .Replace("&", "and")
                 .Replace("--", "-")
+                .Replace("---", "-")
                 .Trim('-');
 
             return slug;
         }
 
-        // Очистка описания
         private string CleanDescription(string description)
         {
             if (string.IsNullOrEmpty(description))

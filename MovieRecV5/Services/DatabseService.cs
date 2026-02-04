@@ -331,14 +331,16 @@ namespace MovieRecV5.Services
 
                 var command = connection.CreateCommand();
                 command.CommandText = @"
-            SELECT * FROM Movies 
-            WHERE Slug LIKE $searchPattern 
-            OR Title LIKE $titlePattern
-            ORDER BY Year DESC";
+        SELECT * FROM Movies 
+        WHERE LOWER(Title) LIKE $searchPattern 
+        OR LOWER(Slug) LIKE $slugPattern
+        OR LOWER(Genres) LIKE $genresPattern
+        ORDER BY VoteCount DESC, Rating DESC";
 
-                var baseSlug = ConvertToSlug(searchTitle);
-                command.Parameters.AddWithValue("$searchPattern", $"{baseSlug}%");
-                command.Parameters.AddWithValue("$titlePattern", $"%{searchTitle}%");
+                var searchTerm = searchTitle.ToLower();
+                command.Parameters.AddWithValue("$searchPattern", $"%{searchTerm}%");
+                command.Parameters.AddWithValue("$slugPattern", $"%{ConvertToSlug(searchTerm)}%");
+                command.Parameters.AddWithValue("$genresPattern", $"%{searchTerm}%");
 
                 using (var reader = command.ExecuteReader())
                 {

@@ -34,17 +34,14 @@ namespace MovieRecV5
             UpdateUserButton();
         }
 
-        // Метод для обновления текста кнопки
         public void UpdateUserButton()
         {
             if (IsLogged && CurrentUser != null)
             {
-                // Используем DisplayName вместо Login для отображения
                 string displayName = !string.IsNullOrEmpty(CurrentUser.DisplayName)
                     ? CurrentUser.DisplayName
                     : CurrentUser.Login;
 
-                // Ограничиваем длину для кнопки
                 if (displayName.Length > 15)
                 {
                     displayName = displayName.Substring(0, 12) + "...";
@@ -53,7 +50,6 @@ namespace MovieRecV5
                 UserProfileButton.Content = displayName;
                 UserProfileButton.ToolTip = $"Профиль пользователя: {CurrentUser.Login}";
 
-                // Можно добавить иконку пользователя
                 UserProfileButton.FontWeight = FontWeights.SemiBold;
             }
             else
@@ -64,7 +60,6 @@ namespace MovieRecV5
             }
         }
 
-        // Метод для входа пользователя
         public void LoginUser(User user)
         {
             CurrentUser = user;
@@ -72,7 +67,6 @@ namespace MovieRecV5
             UpdateUserButton();
         }
 
-        // Метод для выхода пользователя
         public void LogoutUser()
         {
             CurrentUser = null;
@@ -80,12 +74,10 @@ namespace MovieRecV5
             UpdateUserButton();
         }
 
-        // ОБНОВЛЕННЫЙ ОБРАБОТЧИК КНОПКИ - ТЕПЕРЬ СРАЗУ ОТКРЫВАЕТ ПРОФИЛЬ ПРИ ВХОДЕ
         private void UserProfileButton_Click(object sender, RoutedEventArgs e)
         {
             if (IsLogged && CurrentUser != null)
             {
-                // Показываем окно профиля
                 var profileWindow = new UserProfileWindow(CurrentUser, this)
                 {
                     Owner = this,
@@ -95,7 +87,6 @@ namespace MovieRecV5
             }
             else
             {
-                // Показываем окно входа/регистрации
                 var loginWindow = new Login(this)
                 {
                     Owner = this,
@@ -120,11 +111,11 @@ namespace MovieRecV5
                 string searchTitle = SearchTextBox.Text.Trim();
                 Console.WriteLine($"🔍 Поиск: '{searchTitle}'");
 
-                // 1. ВСЕГДА ищем сначала в базе данных (фильмы с постерами)
+                // 1. ВСЕГДА ищем сначала в базе данных
                 int userId = CurrentUser?.Id ?? 0;
                 var moviesFromDb = _databaseService.GetMoviesFromDatabase(searchTitle, userId);
 
-                // Фильтруем фильмы без постера (если такие есть в базе)
+                // Фильтруем фильмы без постера
                 moviesFromDb = moviesFromDb
                     .Where(m => !string.IsNullOrEmpty(m.Poster) && m.Poster != "null")
                     .ToList();
@@ -133,23 +124,27 @@ namespace MovieRecV5
 
                 List<Movie> finalMovies = new List<Movie>();
 
-                if (moviesFromDb.Count >= 4)
+                if (moviesFromDb.Count >= 8)
                 {
-                    // Если в базе достаточно фильмов - используем только их
+                    // СОРТИРУЕМ ОТ НАИБОЛЕЕ ПОПУЛЯРНОГО К НАИМЕНЕЕ
                     finalMovies = moviesFromDb
-                        .OrderByDescending(m => m.VoteCount)
+                        .OrderByDescending(m => m.VoteCount) // По количеству голосов (самый популярный показатель)
+                        .ThenByDescending(m => m.Rating)     // Затем по рейтингу
                         .Take(8)
                         .ToList();
+
+                    Console.WriteLine($"✅ Используем только фильмы из базы: {finalMovies.Count}");
                 }
-                else
+                else if (moviesFromDb.Count > 0)
                 {
-                    // Если в базе мало фильмов - добавляем результаты из TMDB
+                    // Добавляем фильмы из базы (уже отсортированные по популярности)
+                    finalMovies.AddRange(moviesFromDb
+                        .OrderByDescending(m => m.VoteCount)
+                        .ThenByDescending(m => m.Rating)
+                        .ToList());
+
+                    // Ищем недостающие фильмы в TMDB
                     TmdbParser parser = new TmdbParser();
-
-                    // Сначала используем все фильмы из базы
-                    finalMovies.AddRange(moviesFromDb);
-
-                    // Потом ищем в TMDB (только фильмы с постерами)
                     var onlineMovies = await parser.SearchAllMovies(searchTitle, null);
 
                     if (onlineMovies.Any())
@@ -157,13 +152,21 @@ namespace MovieRecV5
                         // Фильтруем те фильмы, которых нет в базе
                         var newMovies = onlineMovies
                             .Where(onlineMovie => !moviesFromDb.Any(dbMovie =>
-                                dbMovie.Title == onlineMovie.Title && dbMovie.Year == onlineMovie.Year))
+                                string.Equals(dbMovie.Title, onlineMovie.Title, StringComparison.OrdinalIgnoreCase) &&
+                                dbMovie.Year == onlineMovie.Year))
                             .ToList();
 
-                        Console.WriteLine($"🌐 Найдено новых в TMDB: {newMovies.Count} фильмов (с постерами)");
+                        Console.WriteLine($"🌐 Найдено новых в TMDB: {newMovies.Count} фильмов");
+
+                        // СОРТИРУЕМ НОВЫЕ ФИЛЬМЫ ОТ НАИБОЛЕЕ ПОПУЛЯРНОГО
+                        var sortedNewMovies = newMovies
+                            .OrderByDescending(m => m.VoteCount)
+                            .ThenByDescending(m => m.Rating)
+                            .Take(8 - moviesFromDb.Count) // Берем только недостающее количество
+                            .ToList();
 
                         // Сохраняем новые фильмы в базу
-                        foreach (var movie in newMovies)
+                        foreach (var movie in sortedNewMovies)
                         {
                             if (!_databaseService.MovieExists(movie.Slug))
                             {
@@ -171,19 +174,44 @@ namespace MovieRecV5
                             }
                         }
 
-                        // Добавляем новые фильмы к результатам
-                        finalMovies.AddRange(newMovies);
+                        // Добавляем новые фильмы к результатам (они уже отсортированы)
+                        finalMovies.AddRange(sortedNewMovies);
                     }
-
-                    // Берем топ-8
-                    finalMovies = finalMovies
-                        .GroupBy(m => m.Slug)
-                        .Select(g => g.First())
-                        .OrderByDescending(m => m.VoteCount)
-                        .ThenByDescending(m => m.Year)
-                        .Take(8)
-                        .ToList();
                 }
+                else
+                {
+                    // Ищем все в TMDB
+                    TmdbParser parser = new TmdbParser();
+                    var onlineMovies = await parser.SearchAllMovies(searchTitle, null);
+
+                    if (onlineMovies.Any())
+                    {
+                        // СОРТИРУЕМ ОТ НАИБОЛЕЕ ПОПУЛЯРНОГО К НАИМЕНЕЕ
+                        var sortedMovies = onlineMovies
+                            .OrderByDescending(m => m.VoteCount)
+                            .ThenByDescending(m => m.Rating)
+                            .Take(8)
+                            .ToList();
+
+                        // Сохраняем все найденные фильмы в базу
+                        foreach (var movie in sortedMovies)
+                        {
+                            if (!_databaseService.MovieExists(movie.Slug))
+                            {
+                                _databaseService.AddMovie(movie);
+                            }
+                        }
+
+                        finalMovies.AddRange(sortedMovies);
+                        Console.WriteLine($"🌐 Используем только фильмы из TMDB: {finalMovies.Count}");
+                    }
+                }
+
+                // СОРТИРУЕМ ИТОГОВЫЙ СПИСОК (на всякий случай)
+                finalMovies = finalMovies
+                    .OrderByDescending(m => m.VoteCount)
+                    .ThenByDescending(m => m.Rating)
+                    .ToList();
 
                 // Проверяем для всех фильмов, просмотрены ли они текущим пользователем
                 foreach (var movie in finalMovies)
@@ -202,7 +230,7 @@ namespace MovieRecV5
                     return;
                 }
 
-                Console.WriteLine($"🎬 Итоговый список: {finalMovies.Count} фильмов (с постерами)");
+                Console.WriteLine($"🎬 Итоговый список: {finalMovies.Count} фильмов, отсортирован по популярности");
                 DisplayMovies(finalMovies);
             }
             catch (Exception ex)
@@ -235,7 +263,8 @@ namespace MovieRecV5
                 return;
             }
 
-            foreach (var movie in movies.Take(8))
+            // Показываем фильмы в том порядке, в котором они пришли (уже отсортированные)
+            foreach (var movie in movies)
             {
                 var movieButton = CreateMovieButton(movie);
                 MoviesPanel.Children.Add(movieButton);
@@ -285,7 +314,8 @@ namespace MovieRecV5
                 BorderThickness = new Thickness(2),
                 Cursor = Cursors.Hand,
                 Width = 160,
-                Height = 280
+                Height = 280,
+                ToolTip = $"{movie.Title}\nРейтинг: {movie.Rating:F1}/10\nОценок: {movie.FormatVoteCount(movie.VoteCount)}\nГод: {movie.Year}"
             };
 
             var stackPanel = new StackPanel
@@ -364,16 +394,42 @@ namespace MovieRecV5
             };
             textContainer.Children.Add(titleText);
 
-            var ratingText = new TextBlock
+            // РЕЙТИНГ И ПОПУЛЯРНОСТЬ
+            var ratingStack = new StackPanel
             {
-                Text = $"★ {movie.Rating:F1}/10",
-                TextAlignment = TextAlignment.Center,
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 3, 0, 0)
+            };
+
+            var starIcon = new TextBlock
+            {
+                Text = "★",
                 FontSize = 11,
                 Foreground = Brushes.Gold,
                 FontWeight = FontWeights.Bold,
-                Margin = new Thickness(0, 3, 0, 0)
+                Margin = new Thickness(0, 0, 2, 0)
             };
-            textContainer.Children.Add(ratingText);
+
+            var ratingText = new TextBlock
+            {
+                Text = $"{movie.Rating:F1}",
+                FontSize = 11,
+                Foreground = Brushes.Gold,
+                FontWeight = FontWeights.Bold
+            };
+
+            var votesText = new TextBlock
+            {
+                Text = $" ({movie.FormatVoteCount(movie.VoteCount)})",
+                FontSize = 10,
+                Foreground = Brushes.Gray
+            };
+
+            ratingStack.Children.Add(starIcon);
+            ratingStack.Children.Add(ratingText);
+            ratingStack.Children.Add(votesText);
+            textContainer.Children.Add(ratingStack);
 
             if (movie.Genres != null && movie.Genres.Any())
             {
