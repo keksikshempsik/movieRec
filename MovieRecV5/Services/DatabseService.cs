@@ -329,24 +329,35 @@ namespace MovieRecV5.Services
             {
                 connection.Open();
 
+                // Ищем по нескольким критериям
                 var command = connection.CreateCommand();
                 command.CommandText = @"
         SELECT * FROM Movies 
         WHERE LOWER(Title) LIKE $searchPattern 
-        OR LOWER(Slug) LIKE $slugPattern
-        OR LOWER(Genres) LIKE $genresPattern
+           OR LOWER(Slug) LIKE $slugPattern
+           OR EXISTS (
+               SELECT value FROM json_each(Genres) 
+               WHERE LOWER(value) LIKE $searchPattern
+           )
         ORDER BY VoteCount DESC, Rating DESC";
 
                 var searchTerm = searchTitle.ToLower();
+                var slugPattern = $"%{searchTerm.Replace(" ", "-")}%";
+
                 command.Parameters.AddWithValue("$searchPattern", $"%{searchTerm}%");
-                command.Parameters.AddWithValue("$slugPattern", $"%{ConvertToSlug(searchTerm)}%");
-                command.Parameters.AddWithValue("$genresPattern", $"%{searchTerm}%");
+                command.Parameters.AddWithValue("$slugPattern", slugPattern);
 
                 using (var reader = command.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        movies.Add(CreateMovieFromReader(reader, userId));
+                        var movie = CreateMovieFromReader(reader, userId);
+
+                        // Проверяем наличие постера
+                        if (!string.IsNullOrEmpty(movie.Poster) && movie.Poster != "null")
+                        {
+                            movies.Add(movie);
+                        }
                     }
                 }
             }
@@ -365,17 +376,31 @@ namespace MovieRecV5.Services
                 command.CommandText = @"
         SELECT * FROM Movies 
         WHERE LOWER(Title) LIKE $searchTerm 
-        OR LOWER(Slug) LIKE $searchTerm
-        OR LOWER(Genres) LIKE $searchTerm
-        ORDER BY VoteCount DESC, Rating DESC";
+           OR LOWER(Slug) LIKE $slugPattern
+           OR EXISTS (
+               SELECT value FROM json_each(Genres) 
+               WHERE LOWER(value) LIKE $searchTerm
+           )
+        ORDER BY VoteCount DESC, Rating DESC, Year DESC
+        LIMIT 50"; // Ограничиваем количество
 
-                command.Parameters.AddWithValue("$searchTerm", $"%{searchTerm.ToLower()}%");
+                var searchTermLower = searchTerm.ToLower();
+                var slugPattern = $"%{searchTermLower.Replace(" ", "-")}%";
+
+                command.Parameters.AddWithValue("$searchTerm", $"%{searchTermLower}%");
+                command.Parameters.AddWithValue("$slugPattern", slugPattern);
 
                 using (var reader = command.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        movies.Add(CreateMovieFromReader(reader, userId));
+                        var movie = CreateMovieFromReader(reader, userId);
+
+                        // Проверяем наличие постера
+                        if (!string.IsNullOrEmpty(movie.Poster) && movie.Poster != "null")
+                        {
+                            movies.Add(movie);
+                        }
                     }
                 }
             }
@@ -539,6 +564,31 @@ namespace MovieRecV5.Services
                 var count = Convert.ToInt32(command.ExecuteScalar());
                 return count > 0;
             }
+        }
+
+        // В классе DatabaseService добавьте этот метод
+        public Movie GetMovieByTmdbId(int tmdbId, int userId = 0)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = @"
+        SELECT * FROM Movies 
+        WHERE Id = $tmdbId";
+
+                command.Parameters.AddWithValue("$tmdbId", tmdbId);
+
+                using (var reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return CreateMovieFromReader(reader, userId);
+                    }
+                }
+            }
+            return null;
         }
 
         // ПОЛЬЗОВАТЕЛИ

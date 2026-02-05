@@ -227,11 +227,74 @@ namespace MovieRecV5.Services
         {
             try
             {
-                var movieUrl = $"https://api.themoviedb.org/3/movie/{tmdbId}?api_key={_apiKey}&language=ru-RU";
+                var movieUrl = $"https://api.themoviedb.org/3/movie/{tmdbId}?api_key={_apiKey}&language=ru-RU&append_to_response=credits";
                 var response = await _httpClient.GetStringAsync(movieUrl);
                 var jsonDoc = JsonDocument.Parse(response);
 
-                return await ParseMovieFromTmdbData(jsonDoc.RootElement);
+                var title = jsonDoc.RootElement.GetProperty("title").GetString();
+                var overview = jsonDoc.RootElement.GetProperty("overview").GetString();
+                var releaseDate = jsonDoc.RootElement.GetProperty("release_date").GetString();
+                var voteAverage = jsonDoc.RootElement.GetProperty("vote_average").GetSingle();
+                var voteCount = jsonDoc.RootElement.GetProperty("vote_count").GetInt32();
+                var posterPath = jsonDoc.RootElement.GetProperty("poster_path").GetString();
+
+                if (string.IsNullOrEmpty(posterPath) || posterPath == "null")
+                {
+                    Console.WriteLine($"❌ Фильм '{title}' без постера - пропускаем");
+                    return null;
+                }
+
+                int year = 0;
+                if (!string.IsNullOrEmpty(releaseDate) && releaseDate.Length >= 4)
+                {
+                    int.TryParse(releaseDate.Substring(0, 4), out year);
+                }
+
+                var slug = $"tmdb-{tmdbId}-{ConvertToSlug(title)}-{year}";
+                string posterUrl = $"https://image.tmdb.org/t/p/w500{posterPath}";
+
+                // Загружаем постер
+                string posterBase64 = null;
+                try
+                {
+                    var posterService = new MoviePosterService();
+                    posterBase64 = await posterService.DownloadPosterAsBase64(posterUrl);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ Ошибка загрузки постера: {ex.Message}");
+                    return null;
+                }
+
+                // Получаем жанры
+                var genres = new List<string>();
+                if (jsonDoc.RootElement.TryGetProperty("genres", out var genresElement))
+                {
+                    foreach (var genre in genresElement.EnumerateArray())
+                    {
+                        var genreName = genre.GetProperty("name").GetString();
+                        if (!string.IsNullOrEmpty(genreName))
+                            genres.Add(genreName);
+                    }
+                }
+
+                var movie = new Movie
+                {
+                    Id = tmdbId,
+                    Title = title,
+                    Slug = slug,
+                    Year = year,
+                    Description = CleanDescription(overview),
+                    PosterUrl = posterUrl,
+                    LetterBoxdUrl = $"https://www.themoviedb.org/movie/{tmdbId}",
+                    Poster = posterBase64,
+                    Genres = genres,
+                    VoteCount = voteCount,
+                    Rating = voteAverage
+                };
+
+                Console.WriteLine($"✅ Получен фильм по ID: {title} ({year})");
+                return movie;
             }
             catch (Exception ex)
             {
@@ -275,7 +338,7 @@ namespace MovieRecV5.Services
             return movies;
         }
 
-        private string ConvertToSlug(string title)
+        public string ConvertToSlug(string title)
         {
             if (string.IsNullOrEmpty(title))
                 return string.Empty;
@@ -323,46 +386,48 @@ namespace MovieRecV5.Services
                 .Replace("&gt;", ">");
         }
 
-        // Метод для быстрого поиска (только с постером)
-        public async Task<List<Movie>> SearchMoviesFast(string searchTitle)
+        public async Task<List<Movie>> SearchMoviesFast(string searchTitle, int maxResults = 40)
         {
             try
             {
-                var searchUrl = $"https://api.themoviedb.org/3/search/movie?api_key={_apiKey}&query={WebUtility.UrlEncode(searchTitle)}&language=ru-RU";
+                var movies = new List<Movie>();
+                int totalPages = 1;
+                int currentPage = 1;
+
+                // Первый запрос для получения общего количества страниц
+                var searchUrl = $"https://api.themoviedb.org/3/search/movie?api_key={_apiKey}&query={WebUtility.UrlEncode(searchTitle)}&language=ru-RU&page={currentPage}";
                 var response = await _httpClient.GetStringAsync(searchUrl);
                 var jsonDoc = JsonDocument.Parse(response);
 
-                var movies = new List<Movie>();
+                var totalResults = jsonDoc.RootElement.GetProperty("total_results").GetInt32();
+                totalPages = jsonDoc.RootElement.GetProperty("total_pages").GetInt32();
+
+                Console.WriteLine($"📊 Всего результатов в TMDB: {totalResults}, страниц: {totalPages}");
+
+                // Обрабатываем первую страницу
                 var results = jsonDoc.RootElement.GetProperty("results");
+                movies.AddRange(ProcessSearchResults(results));
 
-                foreach (var result in results.EnumerateArray().Take(5)) // Берем только первые 5 результатов
+                // Если нужно больше результатов и есть еще страницы
+                while (movies.Count < maxResults && currentPage < totalPages && currentPage < 3) // Ограничиваем 3 страницами
                 {
-                    // Проверяем наличие постера
-                    var posterPath = result.GetProperty("poster_path").GetString();
-                    if (string.IsNullOrEmpty(posterPath) || posterPath == "null")
-                        continue;
+                    currentPage++;
+                    searchUrl = $"https://api.themoviedb.org/3/search/movie?api_key={_apiKey}&query={WebUtility.UrlEncode(searchTitle)}&language=ru-RU&page={currentPage}";
+                    response = await _httpClient.GetStringAsync(searchUrl);
+                    jsonDoc = JsonDocument.Parse(response);
+                    results = jsonDoc.RootElement.GetProperty("results");
+                    movies.AddRange(ProcessSearchResults(results));
 
-                    var title = result.GetProperty("title").GetString();
-                    var releaseDate = result.GetProperty("release_date").GetString();
-                    var tmdbId = result.GetProperty("id").GetInt32();
-
-                    int year = 0;
-                    if (!string.IsNullOrEmpty(releaseDate) && releaseDate.Length >= 4)
-                    {
-                        int.TryParse(releaseDate.Substring(0, 4), out year);
-                    }
-
-                    var slug = $"tmdb-{tmdbId}-{ConvertToSlug(title)}-{year}";
-
-                    movies.Add(new Movie
-                    {
-                        Id = tmdbId,
-                        Title = title,
-                        Slug = slug,
-                        Year = year,
-                        LetterBoxdUrl = $"https://www.themoviedb.org/movie/{tmdbId}"
-                    });
+                    // Небольшая задержка между запросами
+                    await Task.Delay(200);
                 }
+
+                // Сортируем по популярности и ограничиваем количество
+                movies = movies
+                    .OrderByDescending(m => m.VoteCount)
+                    .ThenByDescending(m => m.Rating)
+                    .Take(maxResults)
+                    .ToList();
 
                 Console.WriteLine($"🔍 Быстрый поиск: {movies.Count} фильмов с постером");
                 return movies;
@@ -372,6 +437,46 @@ namespace MovieRecV5.Services
                 Console.WriteLine($"❌ Ошибка при быстром поиске: {ex.Message}");
                 return new List<Movie>();
             }
+        }
+
+        private List<Movie> ProcessSearchResults(JsonElement results)
+        {
+            var movies = new List<Movie>();
+
+            foreach (var result in results.EnumerateArray())
+            {
+                // Проверяем наличие постера
+                var posterPath = result.GetProperty("poster_path").GetString();
+                if (string.IsNullOrEmpty(posterPath) || posterPath == "null")
+                    continue;
+
+                var title = result.GetProperty("title").GetString();
+                var releaseDate = result.GetProperty("release_date").GetString();
+                var tmdbId = result.GetProperty("id").GetInt32();
+                var voteAverage = result.GetProperty("vote_average").GetSingle();
+                var voteCount = result.GetProperty("vote_count").GetInt32();
+
+                int year = 0;
+                if (!string.IsNullOrEmpty(releaseDate) && releaseDate.Length >= 4)
+                {
+                    int.TryParse(releaseDate.Substring(0, 4), out year);
+                }
+
+                var slug = $"tmdb-{tmdbId}-{ConvertToSlug(title)}-{year}";
+
+                movies.Add(new Movie
+                {
+                    Id = tmdbId,
+                    Title = title,
+                    Slug = slug,
+                    Year = year,
+                    Rating = voteAverage,
+                    VoteCount = voteCount,
+                    LetterBoxdUrl = $"https://www.themoviedb.org/movie/{tmdbId}"
+                });
+            }
+
+            return movies;
         }
 
         // Метод для проверки только фильмов с постером
@@ -411,5 +516,7 @@ namespace MovieRecV5.Services
                 return new List<Movie>();
             }
         }
+
+
     }
 }
