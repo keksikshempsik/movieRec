@@ -386,7 +386,7 @@ namespace MovieRecV5.Services
                 .Replace("&gt;", ">");
         }
 
-        public async Task<List<Movie>> SearchMoviesFast(string searchTitle, int maxResults = 40)
+        public async Task<List<Movie>> SearchMoviesFast(string searchTitle, int maxResults = 40, int minVotes = 100)
         {
             try
             {
@@ -394,7 +394,7 @@ namespace MovieRecV5.Services
                 int totalPages = 1;
                 int currentPage = 1;
 
-                // Первый запрос для получения общего количества страниц
+                // Первый запрос
                 var searchUrl = $"https://api.themoviedb.org/3/search/movie?api_key={_apiKey}&query={WebUtility.UrlEncode(searchTitle)}&language=ru-RU&page={currentPage}";
                 var response = await _httpClient.GetStringAsync(searchUrl);
                 var jsonDoc = JsonDocument.Parse(response);
@@ -406,30 +406,29 @@ namespace MovieRecV5.Services
 
                 // Обрабатываем первую страницу
                 var results = jsonDoc.RootElement.GetProperty("results");
-                movies.AddRange(ProcessSearchResults(results));
+                movies.AddRange(ProcessSearchResults(results, minVotes));
 
-                // Если нужно больше результатов и есть еще страницы
-                while (movies.Count < maxResults && currentPage < totalPages && currentPage < 3) // Ограничиваем 3 страницами
+                // Если нужно больше результатов
+                while (movies.Count < maxResults && currentPage < totalPages && currentPage < 3)
                 {
                     currentPage++;
                     searchUrl = $"https://api.themoviedb.org/3/search/movie?api_key={_apiKey}&query={WebUtility.UrlEncode(searchTitle)}&language=ru-RU&page={currentPage}";
                     response = await _httpClient.GetStringAsync(searchUrl);
                     jsonDoc = JsonDocument.Parse(response);
                     results = jsonDoc.RootElement.GetProperty("results");
-                    movies.AddRange(ProcessSearchResults(results));
+                    movies.AddRange(ProcessSearchResults(results, minVotes));
 
-                    // Небольшая задержка между запросами
                     await Task.Delay(200);
                 }
 
-                // Сортируем по популярности и ограничиваем количество
+                // Сортируем по популярности
                 movies = movies
                     .OrderByDescending(m => m.VoteCount)
                     .ThenByDescending(m => m.Rating)
                     .Take(maxResults)
                     .ToList();
 
-                Console.WriteLine($"🔍 Быстрый поиск: {movies.Count} фильмов с постером");
+                Console.WriteLine($"🔍 Быстрый поиск: {movies.Count} фильмов с постером (минимум {minVotes} оценок)");
                 return movies;
             }
             catch (Exception ex)
@@ -437,6 +436,50 @@ namespace MovieRecV5.Services
                 Console.WriteLine($"❌ Ошибка при быстром поиске: {ex.Message}");
                 return new List<Movie>();
             }
+        }
+
+        private List<Movie> ProcessSearchResults(JsonElement results, int minVotes = 100)
+        {
+            var movies = new List<Movie>();
+
+            foreach (var result in results.EnumerateArray())
+            {
+                // Проверяем наличие постера
+                var posterPath = result.GetProperty("poster_path").GetString();
+                if (string.IsNullOrEmpty(posterPath) || posterPath == "null")
+                    continue;
+
+                var title = result.GetProperty("title").GetString();
+                var releaseDate = result.GetProperty("release_date").GetString();
+                var tmdbId = result.GetProperty("id").GetInt32();
+                var voteAverage = result.GetProperty("vote_average").GetSingle();
+                var voteCount = result.GetProperty("vote_count").GetInt32();
+
+                // ФИЛЬТР: пропускаем фильмы с малым количеством оценок
+                if (voteCount < minVotes)
+                    continue;
+
+                int year = 0;
+                if (!string.IsNullOrEmpty(releaseDate) && releaseDate.Length >= 4)
+                {
+                    int.TryParse(releaseDate.Substring(0, 4), out year);
+                }
+
+                var slug = $"tmdb-{tmdbId}-{ConvertToSlug(title)}-{year}";
+
+                movies.Add(new Movie
+                {
+                    Id = tmdbId,
+                    Title = title,
+                    Slug = slug,
+                    Year = year,
+                    Rating = voteAverage,
+                    VoteCount = voteCount,
+                    LetterBoxdUrl = $"https://www.themoviedb.org/movie/{tmdbId}"
+                });
+            }
+
+            return movies;
         }
 
         private List<Movie> ProcessSearchResults(JsonElement results)

@@ -119,8 +119,7 @@ namespace MovieRecV5
                 SearchProgressBar.Value = 10;
                 TmdbParser parser = new TmdbParser();
 
-                // Используем обновленный метод с большим количеством результатов
-                var fastSearchResults = await parser.SearchMoviesFast(searchTitle, 30); // Ищем до 30 фильмов
+                var fastSearchResults = await parser.SearchMoviesFast(searchTitle, 40, 100); 
                 Console.WriteLine($"🌐 Быстрый поиск TMDB: {fastSearchResults.Count} ID фильмов");
 
                 if (!fastSearchResults.Any())
@@ -133,22 +132,48 @@ namespace MovieRecV5
                 int progressStep = 60 / Math.Max(fastSearchResults.Count, 1);
                 int processedCount = 0;
 
-                // 2. Для каждого найденного ID проверяем базу
+                // 2. Для каждого найденного фильма проверяем базу
                 foreach (var fastResult in fastSearchResults)
                 {
-                    // Проверяем, есть ли фильм в базе по TMDB ID
-                    var existingMovie = _databaseService.GetMovieByTmdbId(fastResult.Id, userId);
+                    // ФИЛЬТРУЕМ: пропускаем фильмы с оценками меньше 100
+                    if (fastResult.VoteCount < 100)
+                    {
+                        Console.WriteLine($"⏭️ Пропускаем (мало оценок): {fastResult.Title} ({fastResult.VoteCount} оценок)");
+                        processedCount++;
+                        SearchProgressBar.Value = 30 + (processedCount * progressStep);
+                        continue;
+                    }
+
+                    // Ищем фильм в базе по Title и Year
+                    var moviesFromDb = _databaseService.SearchMoviesInDatabase(searchTitle, userId, 100);
+                    var existingMovie = moviesFromDb.FirstOrDefault(m =>
+                        string.Equals(m.Title, fastResult.Title, StringComparison.OrdinalIgnoreCase) &&
+                        m.Year == fastResult.Year);
 
                     if (existingMovie != null)
                     {
+                        // Проверяем оценку в базе
+                        if (existingMovie.VoteCount < 100)
+                        {
+                            Console.WriteLine($"⏭️ Пропускаем (мало оценок в базе): {existingMovie.Title} ({existingMovie.VoteCount} оценок)");
+                            processedCount++;
+                            SearchProgressBar.Value = 30 + (processedCount * progressStep);
+                            continue;
+                        }
+
                         // Фильм есть в базе - используем его
+                        if (existingMovie.Id != fastResult.Id)
+                        {
+                            existingMovie.Id = fastResult.Id;
+                        }
+
                         if (userId > 0)
                         {
                             existingMovie.IsWatched = _databaseService.IsMovieWatched(userId, existingMovie.Slug);
                             existingMovie.InWatchList = _databaseService.IsInWatchList(userId, existingMovie.Slug);
                         }
                         finalMovies.Add(existingMovie);
-                        Console.WriteLine($"📁 Используем из базы: {existingMovie.Title} ({existingMovie.Year})");
+                        Console.WriteLine($"📁 Используем из базы: {existingMovie.Title} ({existingMovie.Year}, {existingMovie.VoteCount} оценок)");
                     }
                     else
                     {
@@ -156,6 +181,18 @@ namespace MovieRecV5
                         var fullMovie = await parser.GetMovieByTmdbId(fastResult.Id);
                         if (fullMovie != null && !string.IsNullOrEmpty(fullMovie.Poster))
                         {
+                            // Проверяем оценку у загруженного фильма
+                            if (fullMovie.VoteCount < 100)
+                            {
+                                Console.WriteLine($"⏭️ Пропускаем (мало оценок при загрузке): {fullMovie.Title} ({fullMovie.VoteCount} оценок)");
+                                processedCount++;
+                                SearchProgressBar.Value = 30 + (processedCount * progressStep);
+                                continue;
+                            }
+
+                            // Убедимся, что Id установлен правильно
+                            fullMovie.Id = fastResult.Id;
+
                             // Сохраняем в базу
                             _databaseService.AddMovie(fullMovie);
 
@@ -167,7 +204,7 @@ namespace MovieRecV5
                             }
 
                             finalMovies.Add(fullMovie);
-                            Console.WriteLine($"➕ Добавлен из TMDB: {fullMovie.Title} ({fullMovie.Year})");
+                            Console.WriteLine($"➕ Добавлен из TMDB: {fullMovie.Title} ({fullMovie.Year}, {fullMovie.VoteCount} оценок)");
                         }
                     }
 
@@ -175,18 +212,20 @@ namespace MovieRecV5
                     SearchProgressBar.Value = 30 + (processedCount * progressStep);
 
                     // Задержка чтобы не перегружать API
-                    await Task.Delay(150); // Увеличили задержку
+                    await Task.Delay(150);
                 }
 
                 // 3. Также ищем в базе по названию (на случай пропусков)
                 SearchProgressBar.Value = 95;
                 var additionalMoviesFromDb = _databaseService.SearchMoviesInDatabase(searchTitle, userId)
                     .Where(m => !string.IsNullOrEmpty(m.Poster) && m.Poster != "null")
-                    .Where(m => !finalMovies.Any(fm => fm.Id == m.Id ||
-                        (string.Equals(fm.Title, m.Title, StringComparison.OrdinalIgnoreCase) && fm.Year == m.Year)))
+                    .Where(m => m.VoteCount >= 100) // ФИЛЬТР: минимум 100 оценок
+                    .Where(m => !finalMovies.Any(fm =>
+                        string.Equals(fm.Title, m.Title, StringComparison.OrdinalIgnoreCase) &&
+                        fm.Year == m.Year))
                     .OrderByDescending(m => m.VoteCount)
                     .ThenByDescending(m => m.Rating)
-                    .Take(10) // Берем только топ-10 дополнительных
+                    .Take(15) // Берем больше, так как фильтровали
                     .ToList();
 
                 if (additionalMoviesFromDb.Any())
@@ -199,7 +238,7 @@ namespace MovieRecV5
                 finalMovies = finalMovies
                     .OrderByDescending(m => m.VoteCount)
                     .ThenByDescending(m => m.Rating)
-                    .ThenByDescending(m => m.Year) // Новые фильмы в конце
+                    .ThenByDescending(m => m.Year)
                     .ToList();
 
                 SearchProgressBar.Value = 100;
@@ -207,11 +246,11 @@ namespace MovieRecV5
                 // Показываем результаты
                 if (!finalMovies.Any())
                 {
-                    MessageBox.Show("Фильмы не найдены.");
+                    MessageBox.Show("Фильмы не найдены. Попробуйте другой запрос или снизьте требования к популярности.");
                     return;
                 }
 
-                Console.WriteLine($"🎬 Итоговый список: {finalMovies.Count} фильмов");
+                Console.WriteLine($"🎬 Итоговый список: {finalMovies.Count} фильмов (минимум 100 оценок каждый)");
                 DisplayMovies(finalMovies);
             }
             catch (Exception ex)

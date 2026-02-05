@@ -364,7 +364,7 @@ namespace MovieRecV5.Services
             return movies;
         }
 
-        public List<Movie> SearchMoviesInDatabase(string searchTerm, int userId = 0)
+        public List<Movie> SearchMoviesInDatabase(string searchTerm, int userId = 0, int minVotes = 100)
         {
             var movies = new List<Movie>();
 
@@ -375,20 +375,22 @@ namespace MovieRecV5.Services
                 var command = connection.CreateCommand();
                 command.CommandText = @"
         SELECT * FROM Movies 
-        WHERE LOWER(Title) LIKE $searchTerm 
+        WHERE (LOWER(Title) LIKE $searchTerm 
            OR LOWER(Slug) LIKE $slugPattern
            OR EXISTS (
                SELECT value FROM json_each(Genres) 
                WHERE LOWER(value) LIKE $searchTerm
-           )
+           ))
+        AND VoteCount >= $minVotes
         ORDER BY VoteCount DESC, Rating DESC, Year DESC
-        LIMIT 50"; // Ограничиваем количество
+        LIMIT 50";
 
                 var searchTermLower = searchTerm.ToLower();
                 var slugPattern = $"%{searchTermLower.Replace(" ", "-")}%";
 
                 command.Parameters.AddWithValue("$searchTerm", $"%{searchTermLower}%");
                 command.Parameters.AddWithValue("$slugPattern", slugPattern);
+                command.Parameters.AddWithValue("$minVotes", minVotes);
 
                 using (var reader = command.ExecuteReader())
                 {
@@ -396,7 +398,6 @@ namespace MovieRecV5.Services
                     {
                         var movie = CreateMovieFromReader(reader, userId);
 
-                        // Проверяем наличие постера
                         if (!string.IsNullOrEmpty(movie.Poster) && movie.Poster != "null")
                         {
                             movies.Add(movie);
