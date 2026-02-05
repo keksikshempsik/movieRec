@@ -101,6 +101,7 @@ namespace MovieRecV5
             try
             {
                 SetProgressStatus(true);
+                SearchProgressBar.IsIndeterminate = true;
 
                 if (SearchTextBox.Text == "Введите название..." || string.IsNullOrWhiteSpace(SearchTextBox.Text))
                 {
@@ -111,11 +112,13 @@ namespace MovieRecV5
                 string searchTitle = SearchTextBox.Text.Trim();
                 Console.WriteLine($"🔍 Поиск: '{searchTitle}'");
 
-                // 1. ВСЕГДА ищем сначала в базе данных
                 int userId = CurrentUser?.Id ?? 0;
+
+                SearchProgressBar.IsIndeterminate = false;
+                SearchProgressBar.Value = 20;
+
                 var moviesFromDb = _databaseService.GetMoviesFromDatabase(searchTitle, userId);
 
-                // Фильтруем фильмы без постера
                 moviesFromDb = moviesFromDb
                     .Where(m => !string.IsNullOrEmpty(m.Poster) && m.Poster != "null")
                     .ToList();
@@ -124,96 +127,79 @@ namespace MovieRecV5
 
                 List<Movie> finalMovies = new List<Movie>();
 
-                if (moviesFromDb.Count >= 8)
+                if (moviesFromDb.Count > 0)
                 {
-                    // СОРТИРУЕМ ОТ НАИБОЛЕЕ ПОПУЛЯРНОГО К НАИМЕНЕЕ
                     finalMovies = moviesFromDb
-                        .OrderByDescending(m => m.VoteCount) // По количеству голосов (самый популярный показатель)
-                        .ThenByDescending(m => m.Rating)     // Затем по рейтингу
-                        .Take(8)
-                        .ToList();
-
-                    Console.WriteLine($"✅ Используем только фильмы из базы: {finalMovies.Count}");
-                }
-                else if (moviesFromDb.Count > 0)
-                {
-                    // Добавляем фильмы из базы (уже отсортированные по популярности)
-                    finalMovies.AddRange(moviesFromDb
                         .OrderByDescending(m => m.VoteCount)
                         .ThenByDescending(m => m.Rating)
-                        .ToList());
+                        .ToList();
 
-                    // Ищем недостающие фильмы в TMDB
-                    TmdbParser parser = new TmdbParser();
-                    var onlineMovies = await parser.SearchAllMovies(searchTitle, null);
-
-                    if (onlineMovies.Any())
-                    {
-                        // Фильтруем те фильмы, которых нет в базе
-                        var newMovies = onlineMovies
-                            .Where(onlineMovie => !moviesFromDb.Any(dbMovie =>
-                                string.Equals(dbMovie.Title, onlineMovie.Title, StringComparison.OrdinalIgnoreCase) &&
-                                dbMovie.Year == onlineMovie.Year))
-                            .ToList();
-
-                        Console.WriteLine($"🌐 Найдено новых в TMDB: {newMovies.Count} фильмов");
-
-                        // СОРТИРУЕМ НОВЫЕ ФИЛЬМЫ ОТ НАИБОЛЕЕ ПОПУЛЯРНОГО
-                        var sortedNewMovies = newMovies
-                            .OrderByDescending(m => m.VoteCount)
-                            .ThenByDescending(m => m.Rating)
-                            .Take(8 - moviesFromDb.Count) // Берем только недостающее количество
-                            .ToList();
-
-                        // Сохраняем новые фильмы в базу
-                        foreach (var movie in sortedNewMovies)
-                        {
-                            if (!_databaseService.MovieExists(movie.Slug))
-                            {
-                                _databaseService.AddMovie(movie);
-                            }
-                        }
-
-                        // Добавляем новые фильмы к результатам (они уже отсортированы)
-                        finalMovies.AddRange(sortedNewMovies);
-                    }
+                    Console.WriteLine($"✅ Используем фильмы из базы: {finalMovies.Count}");
                 }
-                else
+
+                SearchProgressBar.Value = 40;
+
+                TmdbParser parser = new TmdbParser();
+                var onlineMovies = await parser.SearchAllMovies(searchTitle, null);
+
+                SearchProgressBar.Value = 70;
+
+                if (onlineMovies.Any())
                 {
-                    // Ищем все в TMDB
-                    TmdbParser parser = new TmdbParser();
-                    var onlineMovies = await parser.SearchAllMovies(searchTitle, null);
+                    Console.WriteLine($"🌐 Найдено в TMDB: {onlineMovies.Count} фильмов (с постерами)");
 
-                    if (onlineMovies.Any())
+                    var sortedOnlineMovies = onlineMovies
+                        .OrderByDescending(m => m.VoteCount)
+                        .ThenByDescending(m => m.Rating)
+                        .ToList();
+
+                    int progressStep = 30 / Math.Max(sortedOnlineMovies.Count, 1);
+
+                    foreach (var onlineMovie in sortedOnlineMovies)
                     {
-                        // СОРТИРУЕМ ОТ НАИБОЛЕЕ ПОПУЛЯРНОГО К НАИМЕНЕЕ
-                        var sortedMovies = onlineMovies
-                            .OrderByDescending(m => m.VoteCount)
-                            .ThenByDescending(m => m.Rating)
-                            .Take(8)
-                            .ToList();
+                        bool existsInDb = _databaseService.MovieExistsByTitleAndYear(onlineMovie.Title, onlineMovie.Year);
 
-                        // Сохраняем все найденные фильмы в базу
-                        foreach (var movie in sortedMovies)
+                        if (!existsInDb)
                         {
-                            if (!_databaseService.MovieExists(movie.Slug))
+                            if (!_databaseService.MovieExists(onlineMovie.Slug))
                             {
-                                _databaseService.AddMovie(movie);
+                                _databaseService.AddMovie(onlineMovie);
+                                Console.WriteLine($"➕ Добавлен новый фильм в базу: {onlineMovie.Title} ({onlineMovie.Year})");
+                            }
+
+                            finalMovies.Add(onlineMovie);
+                        }
+                        else
+                        {
+                            var existingMovie = moviesFromDb.FirstOrDefault(dbMovie =>
+                                string.Equals(dbMovie.Title, onlineMovie.Title, StringComparison.OrdinalIgnoreCase) &&
+                                dbMovie.Year == onlineMovie.Year);
+
+                            if (existingMovie == null)
+                            {
+                                var dbMovie = _databaseService.SearchMoviesInDatabase(onlineMovie.Title, userId)
+                                    .FirstOrDefault(m => m.Year == onlineMovie.Year);
+
+                                if (dbMovie != null)
+                                {
+                                    finalMovies.Add(dbMovie);
+                                }
                             }
                         }
 
-                        finalMovies.AddRange(sortedMovies);
-                        Console.WriteLine($"🌐 Используем только фильмы из TMDB: {finalMovies.Count}");
+                        SearchProgressBar.Value += progressStep;
                     }
                 }
 
-                // СОРТИРУЕМ ИТОГОВЫЙ СПИСОК (на всякий случай)
+                SearchProgressBar.Value = 90;
+
                 finalMovies = finalMovies
+                    .GroupBy(m => new { Title = m.Title.ToLower(), m.Year })
+                    .Select(g => g.First())
                     .OrderByDescending(m => m.VoteCount)
                     .ThenByDescending(m => m.Rating)
                     .ToList();
 
-                // Проверяем для всех фильмов, просмотрены ли они текущим пользователем
                 foreach (var movie in finalMovies)
                 {
                     if (userId > 0)
@@ -223,7 +209,8 @@ namespace MovieRecV5
                     }
                 }
 
-                // Показываем результаты
+                SearchProgressBar.Value = 100;
+
                 if (!finalMovies.Any())
                 {
                     MessageBox.Show("Фильмы не найдены.");
@@ -241,9 +228,9 @@ namespace MovieRecV5
             finally
             {
                 SetProgressStatus(false);
+                SearchProgressBar.Value = 0;
             }
         }
-
 
         private void DisplayMovies(List<Movie> movies)
         {
@@ -554,8 +541,16 @@ namespace MovieRecV5
 
         private void SetProgressStatus(bool isProgress)
         {
-            SearchProgressBar.IsIndeterminate = isProgress;
-            SearchButton.IsEnabled = !isProgress;
+            if (isProgress)
+            {
+                SearchProgressBar.Visibility = Visibility.Visible;
+                SearchButton.IsEnabled = false;
+            }
+            else
+            {
+                SearchProgressBar.Visibility = Visibility.Hidden;
+                SearchButton.IsEnabled = true;
+            }
         }
 
         private void SearchTextBox_KeyDown(object sender, KeyEventArgs e)

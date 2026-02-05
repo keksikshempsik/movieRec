@@ -363,20 +363,13 @@ namespace MovieRecV5.Services
 
                 var command = connection.CreateCommand();
                 command.CommandText = @"
-            SELECT * FROM Movies 
-            WHERE Title LIKE $searchTerm 
-            OR Slug LIKE $searchTerm
-            OR Genres LIKE $searchTerm
-            ORDER BY 
-                CASE 
-                    WHEN Title = $exactTitle THEN 1
-                    WHEN Title LIKE $startsWith THEN 2
-                    ELSE 3
-                END";
+        SELECT * FROM Movies 
+        WHERE LOWER(Title) LIKE $searchTerm 
+        OR LOWER(Slug) LIKE $searchTerm
+        OR LOWER(Genres) LIKE $searchTerm
+        ORDER BY VoteCount DESC, Rating DESC";
 
-                command.Parameters.AddWithValue("$searchTerm", $"%{searchTerm}%");
-                command.Parameters.AddWithValue("$exactTitle", searchTerm);
-                command.Parameters.AddWithValue("$startsWith", $"{searchTerm}%");
+                command.Parameters.AddWithValue("$searchTerm", $"%{searchTerm.ToLower()}%");
 
                 using (var reader = command.ExecuteReader())
                 {
@@ -527,6 +520,25 @@ namespace MovieRecV5.Services
                 }
             }
             return movies;
+        }
+
+        public bool MovieExistsByTitleAndYear(string title, int year)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={_databasePath}"))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = @"
+        SELECT COUNT(*) FROM Movies 
+        WHERE LOWER(Title) = $title AND Year = $year";
+
+                command.Parameters.AddWithValue("$title", title.ToLower());
+                command.Parameters.AddWithValue("$year", year);
+
+                var count = Convert.ToInt32(command.ExecuteScalar());
+                return count > 0;
+            }
         }
 
         // ПОЛЬЗОВАТЕЛИ
