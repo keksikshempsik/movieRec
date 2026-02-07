@@ -13,5 +13,14 @@ namespace MovieRecV5
     /// </summary>
     public partial class App : Application
     {
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            // Создаем консоль для отладки
+
+            base.OnStartup(e);
+        }
+
+        [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+        private static extern bool AllocConsole();
     }
 }

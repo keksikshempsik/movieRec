@@ -499,7 +499,7 @@ namespace MovieRecV5.ViewModels
 
         private void LoadWatchedMovies()
         {
-            var watchedMovies = _databaseService.GetWatchedMovies(currentUser.Id);
+            var watched_Movies = _databaseService.GetWatchedMovies(currentUser.Id);
         }
 
         public void RefreshUserAvatar()

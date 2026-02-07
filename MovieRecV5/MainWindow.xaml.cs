@@ -1,16 +1,17 @@
-﻿using System;
+﻿using MovieRecV5.Models;
+using MovieRecV5.Services;
+using MovieRecV5.ViewModels;
+using Npgsql;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Threading;
-using MovieRecV5.Models;
-using MovieRecV5.Services;
-using MovieRecV5.ViewModels;
 
 namespace MovieRecV5
 {
@@ -23,29 +24,118 @@ namespace MovieRecV5
 
         public MainWindow()
         {
-            InitializeComponent();
-
-            var dbService = new PostgresDatabaseService();
-            if (dbService.TestConnection())
+            try
             {
-                MessageBox.Show("Подключение к PostgreSQL успешно!");
-                _databaseService = dbService;
-                _databaseService.InitializeDatabase();
+                // 1. Инициализация WPF компонентов
+                InitializeComponent();
+
+                // 2. Инициализация переменных
+                IsLogged = false;
+                CurrentUser = null;
+                _throttler = new SemaphoreSlim(3, 3);
+
+                Console.WriteLine("=== ЗАПУСК ПРИЛОЖЕНИЯ ===");
+
+                // 3. Инициализация базы данных
+                Console.WriteLine("Подключение к базе данных...");
+                _databaseService = new PostgresDatabaseService();
+
+                try
+                {
+                    // Проверяем подключение
+                    if (_databaseService.TestDatabaseConnection())
+                    {
+                        Console.WriteLine("✅ Подключение к PostgreSQL успешно");
+
+                        // Инициализируем базу данных
+                        Console.WriteLine("Инициализация базы данных...");
+                        _databaseService.InitializeDatabase();
+                        Console.WriteLine("✅ База данных готова");
+                    }
+                    else
+                    {
+                        Console.WriteLine("⚠️ Не удалось подключиться к PostgreSQL");
+                        MessageBox.Show("Не удалось подключиться к базе данных PostgreSQL. " +
+                                      "Приложение будет работать в ограниченном режиме.",
+                                      "Предупреждение",
+                                      MessageBoxButton.OK,
+                                      MessageBoxImage.Warning);
+                    }
+                }
+                catch (Exception dbEx)
+                {
+                    Console.WriteLine($"⚠️ Ошибка базы данных: {dbEx.Message}");
+                    // Не прерываем работу приложения из-за ошибки БД
+                }
+
+                // 4. Настройка элементов управления
+                SearchTextBox.KeyDown += SearchTextBox_KeyDown;
+                UpdateUserButton();
+
+                // 5. Настройка начального состояния
+                SearchTextBox.GotFocus += SearchTextBox_GotFocus;
+                SearchTextBox.LostFocus += SearchTextBox_LostFocus;
+
+                // Проверяем структуру базы данных
+                Console.WriteLine("\nПроверка структуры базы данных...");
+                _databaseService.VerifyDatabaseStructure();
+
+                // Проверяем пароль пользователя по умолчанию
+                Console.WriteLine("\nПроверка пароля пользователя...");
+                _databaseService.CheckDefaultUserPassword();
+
+                // Проверяем подключение
+                Console.WriteLine("\nПроверка подключения к базе данных...");
+                _databaseService.DebugConnection();
+
+                // Скрываем прогресс-бар
+                SearchProgressBar.Visibility = Visibility.Hidden;
+
+                Console.WriteLine("=== ПРИЛОЖЕНИЕ ЗАПУЩЕНО ===");
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("Ошибка подключения к PostgreSQL!");
+                // Критические ошибки инициализации
+                Console.WriteLine($"❌ КРИТИЧЕСКАЯ ОШИБКА: {ex}");
+
+                string errorMessage = $"Не удалось запустить приложение:\n\n{ex.Message}";
+
+                if (ex.InnerException != null)
+                {
+                    errorMessage += $"\n\nДетали: {ex.InnerException.Message}";
+                }
+
+                MessageBox.Show(errorMessage,
+                               "Критическая ошибка",
+                               MessageBoxButton.OK,
+                               MessageBoxImage.Error);
+
+                // Закрываем приложение при критической ошибке
+                Application.Current.Shutdown();
             }
-            IsLogged = false;
-            CurrentUser = null;
+        }
 
-            // Замените на PostgreSQL сервис
-            _databaseService = new PostgresDatabaseService(); // Вместо DatabaseService
-            _databaseService.InitializeDatabase();
+        private void ShowDetailedError(Exception ex)
+        {
+            string errorMessage = $"Ошибка: {ex.Message}\n\n";
+            errorMessage += $"Тип: {ex.GetType().Name}\n";
 
-            _throttler = new SemaphoreSlim(3, 3);
-            SearchTextBox.KeyDown += SearchTextBox_KeyDown;
-            UpdateUserButton();
+            if (ex is PostgresException pgEx)
+            {
+                errorMessage += $"Код ошибки PostgreSQL: {pgEx.SqlState}\n";
+                errorMessage += $"Сообщение PostgreSQL: {pgEx.MessageText}\n";
+                errorMessage += $"Детали: {pgEx.Detail}\n";
+            }
+
+            if (ex.InnerException != null)
+            {
+                errorMessage += $"\nВнутреннее исключение: {ex.InnerException.Message}";
+            }
+
+            errorMessage += $"\n\nStack Trace:\n{ex.StackTrace}";
+
+            MessageBox.Show(errorMessage, "Ошибка базы данных",
+                           MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         public void UpdateUserButton()

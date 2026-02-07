@@ -75,21 +75,28 @@ namespace MovieRecV5.ViewModels
 
         private void HandleLogin()
         {
-            if (string.IsNullOrWhiteSpace(txtLogin.Text))
+            try
             {
-                throw new Exception("Введите логин");
-            }
-
-            if (string.IsNullOrWhiteSpace(txtPassword.Password))
-            {
-                throw new Exception("Введите пароль");
-            }
-
-            if (databaseService.UserExistsByLogin(txtLogin.Text))
-            {
-                var user = databaseService.GetUserByLogin(txtLogin.Text);
-                if (user.Password == User.HashPassword(txtPassword.Password))
+                if (string.IsNullOrWhiteSpace(txtLogin.Text))
                 {
+                    throw new Exception("Введите логин");
+                }
+
+                if (string.IsNullOrWhiteSpace(txtPassword.Password))
+                {
+                    throw new Exception("Введите пароль");
+                }
+
+                Console.WriteLine($"\n=== ПОПЫТКА ВХОДА ===");
+                Console.WriteLine($"Логин: {txtLogin.Text}");
+                Console.WriteLine($"Пароль: {txtPassword.Password.Length} символов");
+
+                // Получаем пользователя из базы
+                var user = databaseService.FindUser(txtLogin.Text, txtPassword.Password);
+
+                if (user != null)
+                {
+                    Console.WriteLine($"✅ Вход успешен: {user.Login}");
 
                     // Входим пользователя в главном окне
                     mainWindow.LoginUser(user);
@@ -107,12 +114,25 @@ namespace MovieRecV5.ViewModels
                 }
                 else
                 {
-                    throw new Exception("Неверный пароль");
+                    Console.WriteLine($"❌ Вход неудачен: пользователь не найден или пароль неверен");
+                    throw new Exception("Неверный логин или пароль");
                 }
             }
-            else
+            catch (Exception ex)
             {
-                throw new Exception("Пользователь с таким логином не существует");
+                Console.WriteLine($"❌ ИСКЛЮЧЕНИЕ В HandleLogin:");
+                Console.WriteLine($"Тип: {ex.GetType().Name}");
+                Console.WriteLine($"Сообщение: {ex.Message}");
+                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
+
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Внутреннее исключение: {ex.InnerException.Message}");
+                    Console.WriteLine($"Внутренний Stack Trace: {ex.InnerException.StackTrace}");
+                }
+
+                MessageBox.Show($"Ошибка входа: {ex.Message}", "Ошибка",
+                               MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

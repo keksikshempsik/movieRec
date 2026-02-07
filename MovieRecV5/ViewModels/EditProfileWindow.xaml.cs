@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using MovieRecV5.Models;
 using MovieRecV5.Services;
+using Npgsql;
 using System;
 using System.Data.SQLite;
 using System.IO;
@@ -177,21 +178,22 @@ namespace MovieRecV5.ViewModels
         {
             try
             {
-                using (var connection = new SQLiteConnection($"Data Source={_databaseService.GetDatabasePath()}"))
+                var dbService = new PostgresDatabaseService();
+                if (dbService.UpdateUserPassword(currentUser.Id, newPassword))
                 {
-                    connection.Open();
-
-                    var command = connection.CreateCommand();
-                    command.CommandText = "UPDATE Users SET Password = $password WHERE Id = $userId";
-                    command.Parameters.AddWithValue("$password", User.HashPassword(newPassword));
-                    command.Parameters.AddWithValue("$userId", currentUser.Id);
-
-                    command.ExecuteNonQuery();
+                    Console.WriteLine("Password updated successfully");
+                }
+                else
+                {
+                    MessageBox.Show("Не удалось обновить пароль", "Ошибка",
+                                  MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error updating password: {ex.Message}");
+                MessageBox.Show($"Ошибка обновления пароля: {ex.Message}", "Ошибка",
+                              MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
