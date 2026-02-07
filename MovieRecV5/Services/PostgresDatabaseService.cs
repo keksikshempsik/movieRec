@@ -547,32 +547,42 @@ namespace MovieRecV5.Services
             {
                 connection.Open();
 
-                var getCommand = connection.CreateCommand();
-                getCommand.CommandText = "SELECT vote_count, Rating FROM Movies WHERE Slug = @slug";
-                getCommand.Parameters.AddWithValue("@slug", movieSlug);
+                // 1. Сначала получаем текущие данные
+                int currentVoteCount = 0;
+                float currentRating = 0f;
 
-                using (var reader = getCommand.ExecuteReader())
+                using (var getCommand = new NpgsqlCommand(
+                    "SELECT vote_count, rating FROM movies WHERE slug = @slug",
+                    connection))
                 {
-                    if (reader.Read())
+                    getCommand.Parameters.AddWithValue("@slug", movieSlug);
+
+                    using (var reader = getCommand.ExecuteReader())
                     {
-                        int currentVoteCount = reader["VoteCount"] != DBNull.Value ? Convert.ToInt32(reader["VoteCount"]) : 0;
-                        float currentRating = reader["Rating"] != DBNull.Value ? Convert.ToSingle(reader["Rating"]) : 0f;
-
-                        int newVoteCount = currentVoteCount + 1;
-                        float newRating = ((currentRating * currentVoteCount) + userRating) / newVoteCount;
-
-                        var updateCommand = connection.CreateCommand();
-                        updateCommand.CommandText = @"
-                            UPDATE Movies 
-                            SET vote_count = @voteCount, Rating = @rating 
-                            WHERE Slug = @slug";
-
-                        updateCommand.Parameters.AddWithValue("@voteCount", newVoteCount);
-                        updateCommand.Parameters.AddWithValue("@rating", newRating);
-                        updateCommand.Parameters.AddWithValue("@slug", movieSlug);
-
-                        updateCommand.ExecuteNonQuery();
+                        if (reader.Read())
+                        {
+                            currentVoteCount = reader["vote_count"] != DBNull.Value ?
+                                Convert.ToInt32(reader["vote_count"]) : 0;
+                            currentRating = reader["rating"] != DBNull.Value ?
+                                Convert.ToSingle(reader["rating"]) : 0f;
+                        }
                     }
+                }
+
+                // 2. Закрыли reader, теперь можем выполнить update
+                int newVoteCount = currentVoteCount + 1;
+                float newRating = ((currentRating * currentVoteCount) + userRating) / newVoteCount;
+
+                using (var updateCommand = new NpgsqlCommand(@"
+            UPDATE movies 
+            SET vote_count = @voteCount, rating = @rating 
+            WHERE slug = @slug", connection))
+                {
+                    updateCommand.Parameters.AddWithValue("@voteCount", newVoteCount);
+                    updateCommand.Parameters.AddWithValue("@rating", newRating);
+                    updateCommand.Parameters.AddWithValue("@slug", movieSlug);
+
+                    updateCommand.ExecuteNonQuery();
                 }
             }
         }
@@ -1058,120 +1068,120 @@ namespace MovieRecV5.Services
                     connection.Open();
                     Console.WriteLine("Подключение открыто для статистики");
 
-                    // 1. Получаем распределение по жанрам
-                    Console.WriteLine("Запрос 1: Распределение по жанрам...");
-                    var command = new NpgsqlCommand(@"
+                    // 1. Распределение по жанрам
+                    using (var command = new NpgsqlCommand(@"
                 SELECT m.genres 
                 FROM movies m
                 INNER JOIN watched_movies wm ON m.slug = wm.movie_slug
-                WHERE wm.user_id = @userId", connection);
-
-                    command.Parameters.AddWithValue("@userId", userId);
-
-                    using (var reader = command.ExecuteReader())
+                WHERE wm.user_id = @userId", connection))
                     {
-                        Console.WriteLine("Чтение данных о жанрах...");
-                        while (reader.Read())
+                        command.Parameters.AddWithValue("@userId", userId);
+
+                        using (var reader = command.ExecuteReader())
                         {
-                            string genresJson = reader["genres"]?.ToString();
-                            if (!string.IsNullOrEmpty(genresJson))
+                            Console.WriteLine("Чтение данных о жанрах...");
+                            while (reader.Read())
                             {
-                                try
+                                string genresJson = reader["genres"]?.ToString();
+                                if (!string.IsNullOrEmpty(genresJson))
                                 {
-                                    var genres = Newtonsoft.Json.JsonConvert.DeserializeObject<List<string>>(genresJson);
-                                    if (genres != null && genres.Count > 0)
+                                    try
                                     {
-                                        var firstGenre = genres[0];
-                                        if (stats.GenreDistribution.ContainsKey(firstGenre))
-                                            stats.GenreDistribution[firstGenre]++;
-                                        else
-                                            stats.GenreDistribution[firstGenre] = 1;
+                                        var genres = Newtonsoft.Json.JsonConvert.DeserializeObject<List<string>>(genresJson);
+                                        if (genres != null && genres.Count > 0)
+                                        {
+                                            var firstGenre = genres[0];
+                                            if (stats.GenreDistribution.ContainsKey(firstGenre))
+                                                stats.GenreDistribution[firstGenre]++;
+                                            else
+                                                stats.GenreDistribution[firstGenre] = 1;
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Console.WriteLine($"Ошибка десериализации жанров: {ex.Message}");
                                     }
                                 }
-                                catch (Exception ex)
-                                {
-                                    Console.WriteLine($"Ошибка десериализации жанров: {ex.Message}");
-                                }
                             }
+                            Console.WriteLine($"Прочитано жанров: {stats.GenreDistribution.Count}");
                         }
-                        Console.WriteLine($"Прочитано жанров: {stats.GenreDistribution.Count}");
                     }
 
-                    // 2. Получаем распределение по годам
-                    Console.WriteLine("Запрос 2: Распределение по годам...");
-                    command = new NpgsqlCommand(@"
+                    // 2. Распределение по годам
+                    using (var command = new NpgsqlCommand(@"
                 SELECT m.year, COUNT(*) as count
                 FROM movies m
                 INNER JOIN watched_movies wm ON m.slug = wm.movie_slug
                 WHERE wm.user_id = @userId
                 GROUP BY m.year
-                ORDER BY count DESC", connection);
-
-                    command.Parameters.AddWithValue("@userId", userId);
-
-                    using (var reader = command.ExecuteReader())
+                ORDER BY count DESC", connection))
                     {
-                        Console.WriteLine("Чтение данных о годах...");
-                        while (reader.Read())
+                        command.Parameters.AddWithValue("@userId", userId);
+
+                        using (var reader = command.ExecuteReader())
                         {
-                            int year = reader["year"] != DBNull.Value ? Convert.ToInt32(reader["year"]) : 0;
-                            int count = Convert.ToInt32(reader["count"]);
-                            stats.YearDistribution[year] = count;
+                            Console.WriteLine("Чтение данных о годах...");
+                            while (reader.Read())
+                            {
+                                int year = reader["year"] != DBNull.Value ? Convert.ToInt32(reader["year"]) : 0;
+                                int count = Convert.ToInt32(reader["count"]);
+                                stats.YearDistribution[year] = count;
+                            }
+                            Console.WriteLine($"Прочитано лет: {stats.YearDistribution.Count}");
                         }
-                        Console.WriteLine($"Прочитано лет: {stats.YearDistribution.Count}");
                     }
 
-                    // 3. Получаем распределение по оценкам
-                    Console.WriteLine("Запрос 3: Распределение по оценкам...");
-                    command = new NpgsqlCommand(@"
+                    // 3. Распределение по оценкам
+                    using (var command = new NpgsqlCommand(@"
                 SELECT ur.rating, COUNT(*) as count
                 FROM user_ratings ur
                 INNER JOIN watched_movies wm ON ur.user_id = wm.user_id AND ur.movie_slug = wm.movie_slug
                 WHERE ur.user_id = @userId
                 GROUP BY ur.rating
-                ORDER BY ur.rating", connection);
-
-                    command.Parameters.AddWithValue("@userId", userId);
-
-                    using (var reader = command.ExecuteReader())
+                ORDER BY ur.rating", connection))
                     {
-                        Console.WriteLine("Чтение данных об оценках...");
-                        while (reader.Read())
+                        command.Parameters.AddWithValue("@userId", userId);
+
+                        using (var reader = command.ExecuteReader())
                         {
-                            int rating = Convert.ToInt32(reader["rating"]);
-                            int count = Convert.ToInt32(reader["count"]);
-                            stats.RatingDistribution[rating] = count;
+                            Console.WriteLine("Чтение данных об оценках...");
+                            while (reader.Read())
+                            {
+                                int rating = Convert.ToInt32(reader["rating"]);
+                                int count = Convert.ToInt32(reader["count"]);
+                                stats.RatingDistribution[rating] = count;
+                            }
+                            Console.WriteLine($"Прочитано оценок: {stats.RatingDistribution.Count}");
                         }
-                        Console.WriteLine($"Прочитано оценок: {stats.RatingDistribution.Count}");
                     }
 
-                    // 4. Получаем timeline оценок
-                    Console.WriteLine("Запрос 4: Timeline оценок...");
-                    command = new NpgsqlCommand(@"
+                    // 4. Timeline оценок
+                    using (var command = new NpgsqlCommand(@"
                 SELECT ur.rating, ur.created_at
                 FROM user_ratings ur
                 INNER JOIN watched_movies wm ON ur.user_id = wm.user_id AND ur.movie_slug = wm.movie_slug
                 WHERE ur.user_id = @userId
-                ORDER BY ur.created_at", connection);
-
-                    command.Parameters.AddWithValue("@userId", userId);
-
-                    using (var reader = command.ExecuteReader())
+                ORDER BY ur.created_at", connection))
                     {
-                        Console.WriteLine("Чтение timeline...");
-                        while (reader.Read())
+                        command.Parameters.AddWithValue("@userId", userId);
+
+                        using (var reader = command.ExecuteReader())
                         {
-                            if (reader["created_at"] != DBNull.Value)
+                            Console.WriteLine("Чтение timeline...");
+                            while (reader.Read())
                             {
-                                var point = new User.RatingDatePoint
+                                if (reader["created_at"] != DBNull.Value)
                                 {
-                                    Rating = Convert.ToInt32(reader["rating"]),
-                                    Date = Convert.ToDateTime(reader["created_at"])
-                                };
-                                stats.RatingTimeline.Add(point);
+                                    var point = new User.RatingDatePoint
+                                    {
+                                        Rating = Convert.ToInt32(reader["rating"]),
+                                        Date = Convert.ToDateTime(reader["created_at"])
+                                    };
+                                    stats.RatingTimeline.Add(point);
+                                }
                             }
+                            Console.WriteLine($"Прочитано точек timeline: {stats.RatingTimeline.Count}");
                         }
-                        Console.WriteLine($"Прочитано точек timeline: {stats.RatingTimeline.Count}");
                     }
                 }
 
