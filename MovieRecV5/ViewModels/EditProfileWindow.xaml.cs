@@ -13,7 +13,7 @@ namespace MovieRecV5.ViewModels
     public partial class EditProfileWindow : Window
     {
         private User currentUser;
-        private DatabaseService _databaseService;
+        private PostgresDatabaseService _databaseService;
         private string selectedAvatarPath;
         private Regex emailRegex = new Regex(
             @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
@@ -23,7 +23,7 @@ namespace MovieRecV5.ViewModels
         {
             InitializeComponent();
             currentUser = user;
-            _databaseService = new DatabaseService();
+            _databaseService = new PostgresDatabaseService();
             selectedAvatarPath = user.AvatarUrl;
             LoadUserData();
         }

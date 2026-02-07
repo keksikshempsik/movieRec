@@ -9,7 +9,7 @@ namespace MovieRecV5.ViewModels
 {
     public partial class Login : Window
     {
-        private DatabaseService databaseService;
+        private PostgresDatabaseService databaseService;
         private MainWindow mainWindow;
 
         // Регулярное выражение для проверки email
@@ -21,7 +21,7 @@ namespace MovieRecV5.ViewModels
         {
             InitializeComponent();
             this.mainWindow = mainWindow;
-            databaseService = new DatabaseService();
+            databaseService = new PostgresDatabaseService();
 
             // Подписываемся на события изменения состояния RadioButton
             rbLogin.Checked += RbAuthMode_Checked;

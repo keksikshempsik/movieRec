@@ -16,7 +16,7 @@ namespace MovieRecV5.ViewModels
     {
         private User currentUser;
         private MainWindow mainWindow;
-        private DatabaseService _databaseService;
+        private PostgresDatabaseService _databaseService;
 
         // Цвета для диаграмм
         private Color[] _chartColors = new[]
@@ -38,7 +38,7 @@ namespace MovieRecV5.ViewModels
             InitializeComponent();
             this.currentUser = user;
             this.mainWindow = mainWindow;
-            _databaseService = new DatabaseService();
+            _databaseService = new PostgresDatabaseService();
 
             InitializeAvatar();
             LoadUserData();

@@ -20,7 +20,7 @@ namespace MovieRecV5.ViewModels
         private int currentRating = 0;
         private int tempRating = 0;
         private List<Button> starButtons = new List<Button>();
-        private DatabaseService _databaseService;
+        private PostgresDatabaseService _databaseService;
         private int _currentUserId;
         private bool _isWatched = false;
         private bool _isInWatchList = false;
@@ -30,7 +30,7 @@ namespace MovieRecV5.ViewModels
             InitializeComponent();
             _movie = movie;
             _currentUserId = userId;
-            _databaseService = new DatabaseService();
+            _databaseService = new PostgresDatabaseService();
             ShowMovieInfo(_movie);
             _isTranslated = false;
             _originalDescription = _movie.Description;

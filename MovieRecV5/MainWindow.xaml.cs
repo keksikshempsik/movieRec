@@ -16,7 +16,7 @@ namespace MovieRecV5
 {
     public partial class MainWindow : Window
     {
-        private DatabaseService _databaseService;
+        private PostgresDatabaseService _databaseService;
         private readonly SemaphoreSlim _throttler;
         public bool IsLogged { get; private set; }
         public User CurrentUser { get; private set; }
@@ -24,12 +24,26 @@ namespace MovieRecV5
         public MainWindow()
         {
             InitializeComponent();
+
+            var dbService = new PostgresDatabaseService();
+            if (dbService.TestConnection())
+            {
+                MessageBox.Show("Подключение к PostgreSQL успешно!");
+                _databaseService = dbService;
+                _databaseService.InitializeDatabase();
+            }
+            else
+            {
+                MessageBox.Show("Ошибка подключения к PostgreSQL!");
+            }
             IsLogged = false;
             CurrentUser = null;
-            _databaseService = new DatabaseService();
-            _databaseService.InitializeDatabase();
-            _throttler = new SemaphoreSlim(3, 3);
 
+            // Замените на PostgreSQL сервис
+            _databaseService = new PostgresDatabaseService(); // Вместо DatabaseService
+            _databaseService.InitializeDatabase();
+
+            _throttler = new SemaphoreSlim(3, 3);
             SearchTextBox.KeyDown += SearchTextBox_KeyDown;
             UpdateUserButton();
         }

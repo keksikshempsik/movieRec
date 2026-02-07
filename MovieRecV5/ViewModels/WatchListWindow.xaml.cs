@@ -14,14 +14,14 @@ namespace MovieRecV5.ViewModels
     public partial class WatchListWindow : Window
     {
         private User _currentUser;
-        private DatabaseService _databaseService;
+        private PostgresDatabaseService _databaseService;
         private List<Movie> _watchListMovies;
 
         public WatchListWindow(User user)
         {
             InitializeComponent();
             _currentUser = user;
-            _databaseService = new DatabaseService();
+            _databaseService = new PostgresDatabaseService();
             LoadWatchList();
         }
 
