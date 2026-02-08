@@ -740,14 +740,14 @@ namespace MovieRecV5.Services
 
         public bool MovieExistsByTitleAndYear(string title, int year)
         {
-            using (var connection = new NpgsqlConnection($"Data Source={_databasePath}"))
+            using (var connection = new NpgsqlConnection(_connectionString)) 
             {
                 connection.Open();
 
                 var command = connection.CreateCommand();
                 command.CommandText = @"
-        SELECT COUNT(*) FROM Movies 
-        WHERE LOWER(Title) = @title AND Year = @year";
+        SELECT COUNT(*) FROM movies 
+        WHERE LOWER(title) = @title AND year = @year";
 
                 command.Parameters.AddWithValue("@title", title.ToLower());
                 command.Parameters.AddWithValue("@year", year);
@@ -757,7 +757,6 @@ namespace MovieRecV5.Services
             }
         }
 
-        // В классе DatabaseService добавьте этот метод
         public Movie GetMovieByTmdbId(int tmdbId, int userId = 0)
         {
             using (var connection = new NpgsqlConnection(_connectionString))
@@ -921,7 +920,7 @@ namespace MovieRecV5.Services
         // ПРОСМОТРЕННЫЕ ФИЛЬМЫ
         public void UnmarkMovieAsWatched(int userId, string movieSlug)
         {
-            using (var connection = new NpgsqlConnection($"Data Source={_databasePath}"))
+            using (var connection = new NpgsqlConnection(_connectionString))
             {
                 connection.Open();
 
