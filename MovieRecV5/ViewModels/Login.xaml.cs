@@ -87,24 +87,15 @@ namespace MovieRecV5.ViewModels
                     throw new Exception("Введите пароль");
                 }
 
-                Console.WriteLine($"\n=== ПОПЫТКА ВХОДА ===");
-                Console.WriteLine($"Логин: {txtLogin.Text}");
-                Console.WriteLine($"Пароль: {txtPassword.Password.Length} символов");
-
-                // Получаем пользователя из базы
                 var user = databaseService.FindUser(txtLogin.Text, txtPassword.Password);
 
                 if (user != null)
                 {
-                    Console.WriteLine($"✅ Вход успешен: {user.Login}");
 
-                    // Входим пользователя в главном окне
                     mainWindow.LoginUser(user);
 
-                    // Закрываем окно входа
                     this.Close();
 
-                    // ОТКРЫВАЕМ ПРОФИЛЬ ПОСЛЕ УСПЕШНОГО ВХОДА
                     var profileWindow = new UserProfileWindow(user, mainWindow)
                     {
                         Owner = mainWindow,
@@ -114,21 +105,15 @@ namespace MovieRecV5.ViewModels
                 }
                 else
                 {
-                    Console.WriteLine($"❌ Вход неудачен: пользователь не найден или пароль неверен");
                     throw new Exception("Неверный логин или пароль");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ ИСКЛЮЧЕНИЕ В HandleLogin:");
-                Console.WriteLine($"Тип: {ex.GetType().Name}");
-                Console.WriteLine($"Сообщение: {ex.Message}");
-                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
 
                 if (ex.InnerException != null)
                 {
                     Console.WriteLine($"Внутреннее исключение: {ex.InnerException.Message}");
-                    Console.WriteLine($"Внутренний Stack Trace: {ex.InnerException.StackTrace}");
                 }
 
                 MessageBox.Show($"Ошибка входа: {ex.Message}", "Ошибка",
@@ -138,7 +123,6 @@ namespace MovieRecV5.ViewModels
 
         private void HandleRegistration()
         {
-            // Проверка логина
             if (string.IsNullOrWhiteSpace(txtLogin.Text))
             {
                 throw new Exception("Введите логин");
@@ -149,7 +133,6 @@ namespace MovieRecV5.ViewModels
                 throw new Exception("Логин должен содержать минимум 3 символа");
             }
 
-            // Проверка отображаемого имени (новое поле)
             if (string.IsNullOrWhiteSpace(txtDisplayName.Text))
             {
                 throw new Exception("Введите отображаемое имя");
@@ -160,7 +143,6 @@ namespace MovieRecV5.ViewModels
                 throw new Exception("Отображаемое имя должно содержать минимум 2 символа");
             }
 
-            // Проверка email
             if (string.IsNullOrWhiteSpace(txtEmail.Text))
             {
                 throw new Exception("Введите email");
@@ -171,7 +153,6 @@ namespace MovieRecV5.ViewModels
                 throw new Exception("Введите корректный email адрес");
             }
 
-            // Проверка пароля
             if (string.IsNullOrWhiteSpace(txtPassword.Password))
             {
                 throw new Exception("Введите пароль");
@@ -182,13 +163,11 @@ namespace MovieRecV5.ViewModels
                 throw new Exception("Пароль должен содержать минимум 6 символов");
             }
 
-            // Проверка существования пользователя
             if (databaseService.UserExistsByLogin(txtLogin.Text))
             {
                 throw new Exception("Пользователь с таким логином уже существует");
             }
 
-            // Создаем и добавляем пользователя
             var user = new User
             {
                 Login = txtLogin.Text.Trim(),
@@ -200,7 +179,6 @@ namespace MovieRecV5.ViewModels
 
             if (databaseService.AddUser(user))
             {
-                // Получаем пользователя из базы
                 var registeredUser = databaseService.GetUserByLogin(user.Login);
 
                 if (registeredUser != null)

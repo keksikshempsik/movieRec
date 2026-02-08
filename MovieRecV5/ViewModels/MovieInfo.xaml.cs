@@ -36,7 +36,7 @@ namespace MovieRecV5.ViewModels
             _originalDescription = _movie.Description;
             InitializeRatingStars();
             LoadUserRating();
-            LoadWatchedStatus(); // Загружаем статус просмотра
+            LoadWatchedStatus(); 
             LoadWatchListStatus();
         }
 
@@ -51,20 +51,17 @@ namespace MovieRecV5.ViewModels
         {
             var posterService = new MoviePosterService();
 
-            // Устанавливаем значения напрямую в элементы
             MovieTitle.Text = movie.Title;
             MovieDescription.Text = movie.Description;
             MovieYear.Text = movie.Year.ToString();
             MovieVoteCount.Text = $"{movie.FormatVoteCount(movie.VoteCount)} votes";
             MovieRating.Text = $"Rating: {movie.Rating:F1}";
 
-            // Устанавливаем постер
             if (!string.IsNullOrEmpty(movie.Poster))
             {
                 MoviePoster.Source = posterService.Base64ToBitmapImage(movie.Poster);
             }
 
-            // Заполняем жанры
             if (movie.Genres != null && movie.Genres.Count > 0)
             {
                 GenresList.ItemsSource = movie.Genres;
@@ -76,7 +73,6 @@ namespace MovieRecV5.ViewModels
             var starValues = Enumerable.Range(1, 10).ToList();
             RatingStars.ItemsSource = starValues;
 
-            // Добавляем обработчик двойного клика для сброса оценки
             foreach (var item in RatingStars.Items)
             {
                 var container = RatingStars.ItemContainerGenerator.ContainerFromItem(item);
@@ -335,7 +331,7 @@ namespace MovieRecV5.ViewModels
 
         private void StarButton_Loaded(object sender, RoutedEventArgs e)
         {
-            // Этот метод может быть пустым, но он должен существовать если объявлен в XAML
+
         }
 
         private void LoadWatchedStatus()
@@ -416,7 +412,6 @@ namespace MovieRecV5.ViewModels
             {
                 _isInWatchList = _databaseService.IsInWatchList(_currentUserId, _movie.Slug);
 
-                // Если фильм просмотрен, но все еще в WatchList - убираем из WatchList
                 if (_isWatched && _isInWatchList)
                 {
                     _databaseService.RemoveFromWatchList(_currentUserId, _movie.Slug);
@@ -436,7 +431,6 @@ namespace MovieRecV5.ViewModels
         {
             if (_isWatched && _isInWatchList)
             {
-                // Этого состояния теперь не должно быть, т.к. при отметке просмотра фильм удаляется из WatchList
                 WatchListButton.Content = "Хочу пересмотреть ✓";
                 WatchListButton.Background = Brushes.LightCoral;
                 WatchListStatusText.Text = "Хотите пересмотреть этот фильм";
@@ -444,7 +438,6 @@ namespace MovieRecV5.ViewModels
             }
             else if (_isInWatchList)
             {
-                // Фильм в WatchList, но не просмотрен
                 WatchListButton.Content = "В списке 'Хочу посмотреть' ✓";
                 WatchListButton.Background = Brushes.LightYellow;
                 WatchListStatusText.Text = "Фильм добавлен в список 'Хочу посмотреть'";
@@ -452,15 +445,13 @@ namespace MovieRecV5.ViewModels
             }
             else if (_isWatched)
             {
-                // Фильм просмотрен, можно добавить в WatchList для повторного просмотра
                 WatchListButton.Content = "Хочу пересмотреть";
-                WatchListButton.Background = Brushes.LightBlue; // Синий для "хочу пересмотреть"
+                WatchListButton.Background = Brushes.LightBlue; 
                 WatchListStatusText.Text = "Добавить для повторного просмотра";
                 WatchListStatusText.Foreground = Brushes.Blue;
             }
             else
             {
-                // Фильм не просмотрен и не в WatchList
                 WatchListButton.Content = "Хочу посмотреть";
                 WatchListButton.Background = Brushes.LightYellow;
                 WatchListStatusText.Text = "";

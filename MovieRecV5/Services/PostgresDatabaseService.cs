@@ -25,17 +25,10 @@ namespace MovieRecV5.Services
         {
             try
             {
-                Console.WriteLine("=== ИНИЦИАЛИЗАЦИЯ PostgresDatabaseService ===");
-
                 _connectionString = ConfigurationManager.ConnectionStrings["PostgreSQLConnection"].ConnectionString;
-                Console.WriteLine($"Строка подключения получена: {_connectionString}");
 
                 _httpClient = new HttpClient();
 
-                // Проверяем строку подключения
-                FixAllConnectionStrings();
-
-                Console.WriteLine("=== ИНИЦИАЛИЗАЦИЯ ЗАВЕРШЕНА ===\n");
             }
             catch (Exception ex)
             {
@@ -48,7 +41,7 @@ namespace MovieRecV5.Services
 
         public string GetDatabasePath()
         {
-            return _databasePath; // Возвращаем путь
+            return _databasePath; 
         }
 
         public void InitializeDatabase()
@@ -57,11 +50,7 @@ namespace MovieRecV5.Services
             {
                 using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    Console.WriteLine("Подключаемся к базе данных...");
                     connection.Open();
-                    Console.WriteLine("Подключение установлено");
-
-                    Console.WriteLine("Создаем таблицы...");
 
                     string[] createTables = {
                 // Таблица пользователей
@@ -122,19 +111,13 @@ namespace MovieRecV5.Services
 
                     for (int i = 0; i < createTables.Length; i++)
                     {
-                        Console.WriteLine($"Создаем таблицу {i+1}/5...");
                         using (var command = new NpgsqlCommand(createTables[i], connection))
                         {
                             command.ExecuteNonQuery();
                         }
                     }
 
-                    Console.WriteLine("✅ Все таблицы созданы успешно");
-
-                    // Добавляем дефолтного пользователя
-                    Console.WriteLine("Добавляем пользователя по умолчанию...");
                     AddDefaultUserIfNotExists();
-                    Console.WriteLine("✅ Инициализация базы данных завершена");
                 }
             }
             catch (Exception ex)
@@ -434,12 +417,8 @@ namespace MovieRecV5.Services
         {
             try
             {
-                Console.WriteLine("Проверяем существование пользователя qwe...");
-
                 if (!UserExistsByLogin("qwe"))
                 {
-                    Console.WriteLine("Пользователь qwe не найден, создаем...");
-
                     var defaultUser = new User
                     {
                         Login = "qwe",
@@ -450,15 +429,6 @@ namespace MovieRecV5.Services
                     };
 
                     bool added = AddUser(defaultUser);
-
-                    if (added)
-                    {
-                        Console.WriteLine("✅ Пользователь qwe создан успешно");
-                    }
-                    else
-                    {
-                        Console.WriteLine("⚠️ Не удалось создать пользователя qwe");
-                    }
                 }
                 else
                 {
@@ -471,8 +441,6 @@ namespace MovieRecV5.Services
             }
         }
 
-        // 7. ДОПОЛНИТЕЛЬНЫЕ МЕТОДЫ (добавьте остальные из SQLite версии)
-
         // ВОТЧЛИСТ
 
         public void RemoveFromWatchList(int userId, string movieSlug)
@@ -484,7 +452,7 @@ namespace MovieRecV5.Services
                 var command = connection.CreateCommand();
                 command.CommandText = @"
             DELETE FROM watch_list
-            WHERE user_id = @userId AND MovieSlug = @movieSlug";
+            WHERE user_id = @userId AND movie_slug = @movieSlug";
 
                 command.Parameters.AddWithValue("@userId", userId);
                 command.Parameters.AddWithValue("@movieSlug", movieSlug);
@@ -817,32 +785,23 @@ namespace MovieRecV5.Services
 
         public User FindUser(string login, string password)
         {
-            Console.WriteLine($"\n=== ПОДРОБНАЯ ОТЛАДКА FindUser ===");
-            Console.WriteLine($"Поиск пользователя: {login}");
-
             try
             {
                 using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    Console.WriteLine($"Строка подключения: {_connectionString}");
                     connection.Open();
-                    Console.WriteLine("Подключение открыто успешно");
 
                     var command = new NpgsqlCommand(
                         "SELECT * FROM users WHERE login = @login",
                         connection);
 
                     command.Parameters.AddWithValue("@login", login);
-                    Console.WriteLine($"Параметр добавлен: @login = {login}");
 
                     using (var reader = command.ExecuteReader())
                     {
-                        Console.WriteLine("Запрос выполнен, читаем данные...");
 
                         if (reader.Read())
                         {
-                            Console.WriteLine("Пользователь найден, читаем поля...");
-
                             int id = reader["id"] != DBNull.Value ? Convert.ToInt32(reader["id"]) : 0;
                             string dbLogin = reader["login"]?.ToString() ?? "";
                             string displayName = reader["display_name"]?.ToString() ?? "";
@@ -850,21 +809,10 @@ namespace MovieRecV5.Services
                             string storedPassword = reader["password"]?.ToString() ?? "";
                             string avatarUrl = reader["avatar_url"]?.ToString() ?? "default";
 
-                            Console.WriteLine($"  ID: {id}");
-                            Console.WriteLine($"  Логин: {dbLogin}");
-                            Console.WriteLine($"  DisplayName: {displayName}");
-                            Console.WriteLine($"  Email: {email}");
-                            Console.WriteLine($"  Password hash: {storedPassword}");
-                            Console.WriteLine($"  AvatarUrl: {avatarUrl}");
-
                             string hashedInputPassword = User.HashPassword(password);
-                            Console.WriteLine($"  Введенный хэш: {hashedInputPassword}");
-                            Console.WriteLine($"  Совпадение: {storedPassword == hashedInputPassword}");
 
-                            // Сравниваем хэши
                             if (storedPassword == hashedInputPassword)
                             {
-                                Console.WriteLine("✅ Хэши совпадают, возвращаем пользователя");
                                 return new User
                                 {
                                     Id = id,
@@ -890,15 +838,13 @@ namespace MovieRecV5.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ ИСКЛЮЧЕНИЕ в FindUser: {ex.GetType().Name}");
-                Console.WriteLine($"Сообщение: {ex.Message}");
-                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
 
                 if (ex.InnerException != null)
                 {
                     Console.WriteLine($"Внутреннее исключение: {ex.InnerException.Message}");
                 }
 
-                throw; // Пробрасываем исключение дальше
+                throw;
             }
             finally
             {
@@ -982,7 +928,7 @@ namespace MovieRecV5.Services
                 var command = connection.CreateCommand();
                 command.CommandText = @"
                 DELETE FROM watched_movies
-                WHERE user_id = @userId AND MovieSlug = @movieSlug";
+                WHERE user_id = @userId AND movie_slug = @movieSlug";
 
                 command.Parameters.AddWithValue("@userId", userId);
                 command.Parameters.AddWithValue("@movieSlug", movieSlug);
@@ -1061,12 +1007,9 @@ namespace MovieRecV5.Services
 
             try
             {
-                Console.WriteLine($"Получение статистики для пользователя {userId}...");
-
                 using (var connection = new NpgsqlConnection(_connectionString))
                 {
                     connection.Open();
-                    Console.WriteLine("Подключение открыто для статистики");
 
                     // 1. Распределение по жанрам
                     using (var command = new NpgsqlCommand(@"
@@ -1079,7 +1022,6 @@ namespace MovieRecV5.Services
 
                         using (var reader = command.ExecuteReader())
                         {
-                            Console.WriteLine("Чтение данных о жанрах...");
                             while (reader.Read())
                             {
                                 string genresJson = reader["genres"]?.ToString();
@@ -1103,7 +1045,6 @@ namespace MovieRecV5.Services
                                     }
                                 }
                             }
-                            Console.WriteLine($"Прочитано жанров: {stats.GenreDistribution.Count}");
                         }
                     }
 
@@ -1120,14 +1061,12 @@ namespace MovieRecV5.Services
 
                         using (var reader = command.ExecuteReader())
                         {
-                            Console.WriteLine("Чтение данных о годах...");
                             while (reader.Read())
                             {
                                 int year = reader["year"] != DBNull.Value ? Convert.ToInt32(reader["year"]) : 0;
                                 int count = Convert.ToInt32(reader["count"]);
                                 stats.YearDistribution[year] = count;
                             }
-                            Console.WriteLine($"Прочитано лет: {stats.YearDistribution.Count}");
                         }
                     }
 
@@ -1144,14 +1083,12 @@ namespace MovieRecV5.Services
 
                         using (var reader = command.ExecuteReader())
                         {
-                            Console.WriteLine("Чтение данных об оценках...");
                             while (reader.Read())
                             {
                                 int rating = Convert.ToInt32(reader["rating"]);
                                 int count = Convert.ToInt32(reader["count"]);
                                 stats.RatingDistribution[rating] = count;
                             }
-                            Console.WriteLine($"Прочитано оценок: {stats.RatingDistribution.Count}");
                         }
                     }
 
@@ -1167,7 +1104,6 @@ namespace MovieRecV5.Services
 
                         using (var reader = command.ExecuteReader())
                         {
-                            Console.WriteLine("Чтение timeline...");
                             while (reader.Read())
                             {
                                 if (reader["created_at"] != DBNull.Value)
@@ -1180,12 +1116,10 @@ namespace MovieRecV5.Services
                                     stats.RatingTimeline.Add(point);
                                 }
                             }
-                            Console.WriteLine($"Прочитано точек timeline: {stats.RatingTimeline.Count}");
                         }
                     }
                 }
 
-                Console.WriteLine($"✅ Статистика успешно получена");
                 return stats;
             }
             catch (Exception ex)
@@ -1239,355 +1173,6 @@ namespace MovieRecV5.Services
             {
                 Console.WriteLine($"Error updating password: {ex.Message}");
                 return false;
-            }
-        }
-
-        public void ListAllTables()
-        {
-            try
-            {
-                using (var connection = new NpgsqlConnection(_connectionString))
-                {
-                    connection.Open();
-
-                    var command = new NpgsqlCommand(@"
-                SELECT table_name 
-                FROM information_schema.tables 
-                WHERE table_schema = 'public' 
-                ORDER BY table_name", connection);
-
-                    Console.WriteLine("=== Список таблиц в базе данных ===");
-                    using (var reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            Console.WriteLine($"- {reader["table_name"]}");
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка при получении списка таблиц: {ex.Message}");
-            }
-        }
-
-        public bool TestDatabaseConnection()
-        {
-            try
-            {
-                Console.WriteLine("Тестирование подключения к базе данных...");
-
-                using (var connection = new NpgsqlConnection(_connectionString))
-                {
-                    connection.Open();
-
-                    // Проверим существование таблиц
-                    var command = new NpgsqlCommand(@"
-                SELECT table_name 
-                FROM information_schema.tables 
-                WHERE table_schema = 'public' 
-                ORDER BY table_name", connection);
-
-                    using (var reader = command.ExecuteReader())
-                    {
-                        Console.WriteLine("Таблицы в базе данных:");
-                        int count = 0;
-                        while (reader.Read())
-                        {
-                            Console.WriteLine($"  - {reader["table_name"]}");
-                            count++;
-                        }
-                        Console.WriteLine($"Всего таблиц: {count}");
-                    }
-
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Ошибка тестирования: {ex.Message}");
-                return false;
-            }
-        }
-
-        public void CheckTableStructure()
-        {
-            try
-            {
-                using (var connection = new NpgsqlConnection(_connectionString))
-                {
-                    connection.Open();
-
-                    Console.WriteLine("=== ПРОВЕРКА СТРУКТУРЫ ТАБЛИЦ ===");
-
-                    // Проверим watched_movies
-                    var command = new NpgsqlCommand(@"
-                SELECT column_name, data_type 
-                FROM information_schema.columns 
-                WHERE table_name = 'watched_movies' 
-                ORDER BY ordinal_position", connection);
-
-                    Console.WriteLine("Структура таблицы watched_movies:");
-                    using (var reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            Console.WriteLine($"  - {reader["column_name"]} ({reader["data_type"]})");
-                        }
-                    }
-
-                    // Проверим все таблицы
-                    command = new NpgsqlCommand(@"
-                SELECT table_name, 
-                       string_agg(column_name || ' ' || data_type, ', ') as columns
-                FROM information_schema.columns 
-                WHERE table_schema = 'public'
-                GROUP BY table_name
-                ORDER BY table_name", connection);
-
-                    Console.WriteLine("\nВсе таблицы и их столбцы:");
-                    using (var reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            Console.WriteLine($"\n{reader["table_name"]}:");
-                            Console.WriteLine($"  {reader["columns"]}");
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка проверки структуры: {ex.Message}");
-            }
-        }
-
-        public void VerifyDatabaseStructure()
-        {
-            try
-            {
-                Console.WriteLine("=== ПРОВЕРКА СТРУКТУРЫ БАЗЫ ДАННЫХ ===");
-
-                using (var connection = new NpgsqlConnection(_connectionString))
-                {
-                    connection.Open();
-
-                    // Проверяем таблицу watched_movies
-                    var command = new NpgsqlCommand(@"
-                SELECT 
-                    table_name,
-                    column_name,
-                    data_type,
-                    is_nullable
-                FROM information_schema.columns 
-                WHERE table_name IN ('users', 'movies', 'user_ratings', 'watched_movies', 'watch_list')
-                ORDER BY table_name, ordinal_position", connection);
-
-                    Console.WriteLine("Структура таблиц:");
-                    using (var reader = command.ExecuteReader())
-                    {
-                        string currentTable = "";
-                        while (reader.Read())
-                        {
-                            string table = reader["table_name"].ToString();
-                            string column = reader["column_name"].ToString();
-                            string type = reader["data_type"].ToString();
-
-                            if (table != currentTable)
-                            {
-                                Console.WriteLine($"\n{table}:");
-                                currentTable = table;
-                            }
-
-                            Console.WriteLine($"  - {column} ({type})");
-                        }
-                    }
-
-                    // Проверяем существование пользователя qwe
-                    command = new NpgsqlCommand(
-                        "SELECT id, login, display_name FROM users WHERE login = 'qwe'",
-                        connection);
-
-                    var result = command.ExecuteScalar();
-                    if (result != null)
-                    {
-                        Console.WriteLine("\n✅ Пользователь 'qwe' найден");
-                    }
-                    else
-                    {
-                        Console.WriteLine("\n⚠️ Пользователь 'qwe' не найден");
-                    }
-                }
-
-                Console.WriteLine("=== ПРОВЕРКА ЗАВЕРШЕНА ===");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Ошибка проверки структуры: {ex.Message}");
-            }
-        }
-
-        public void CheckDefaultUserPassword()
-        {
-            try
-            {
-                Console.WriteLine("Проверка пароля пользователя 'qwe'...");
-
-                using (var connection = new NpgsqlConnection(_connectionString))
-                {
-                    connection.Open();
-
-                    var command = new NpgsqlCommand(
-                        "SELECT password FROM users WHERE login = 'qwe'",
-                        connection);
-
-                    var storedPassword = command.ExecuteScalar()?.ToString();
-
-                    if (!string.IsNullOrEmpty(storedPassword))
-                    {
-                        Console.WriteLine($"Хэш пароля в базе: {storedPassword}");
-
-                        // Вычисляем хэш для 'qweqwe'
-                        string testPassword = "qweqwe";
-                        string hashedTestPassword = User.HashPassword(testPassword);
-
-                        Console.WriteLine($"Хэш для 'qweqwe': {hashedTestPassword}");
-
-                        if (storedPassword == hashedTestPassword)
-                        {
-                            Console.WriteLine("✅ Пароль совпадает");
-                        }
-                        else
-                        {
-                            Console.WriteLine("❌ Пароль НЕ совпадает");
-
-                            // Обновляем пароль
-                            Console.WriteLine("Обновляем пароль...");
-                            command = new NpgsqlCommand(
-                                "UPDATE users SET password = @password WHERE login = 'qwe'",
-                                connection);
-                            command.Parameters.AddWithValue("@password", hashedTestPassword);
-                            command.ExecuteNonQuery();
-                            Console.WriteLine("✅ Пароль обновлен");
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка проверки пароля: {ex.Message}");
-            }
-        }
-
-        public void DebugLoginAttempt(string login, string password)
-        {
-            try
-            {
-                Console.WriteLine($"\n=== ОТЛАДКА ВХОДА ===");
-                Console.WriteLine($"Логин: {login}");
-                Console.WriteLine($"Пароль (открытый): {password}");
-
-                string hashedPassword = User.HashPassword(password);
-                Console.WriteLine($"Пароль (хэш): {hashedPassword}");
-
-                using (var connection = new NpgsqlConnection(_connectionString))
-                {
-                    connection.Open();
-
-                    var command = new NpgsqlCommand(
-                        "SELECT id, login, password FROM users WHERE login = @login",
-                        connection);
-                    command.Parameters.AddWithValue("@login", login);
-
-                    using (var reader = command.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            int id = Convert.ToInt32(reader["id"]);
-                            string dbLogin = reader["login"]?.ToString() ?? "";
-                            string dbPassword = reader["password"]?.ToString() ?? "";
-
-                            Console.WriteLine($"Найден в базе:");
-                            Console.WriteLine($"  ID: {id}");
-                            Console.WriteLine($"  Логин: {dbLogin}");
-                            Console.WriteLine($"  Хэш в базе: {dbPassword}");
-                            Console.WriteLine($"  Хэш совпадает: {dbPassword == hashedPassword}");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Пользователь '{login}' не найден в базе");
-                        }
-                    }
-                }
-
-                Console.WriteLine($"=== КОНЕЦ ОТЛАДКИ ===\n");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка отладки: {ex.Message}");
-            }
-        }
-
-        public void DebugConnection()
-        {
-            Console.WriteLine("\n=== ПРОВЕРКА ПОДКЛЮЧЕНИЯ ===");
-            try
-            {
-                Console.WriteLine($"Строка подключения: {_connectionString}");
-
-                using (var connection = new NpgsqlConnection(_connectionString))
-                {
-                    connection.Open();
-                    Console.WriteLine("✅ Подключение успешно");
-
-                    // Проверим версию PostgreSQL
-                    var command = new NpgsqlCommand("SELECT version()", connection);
-                    var version = command.ExecuteScalar()?.ToString();
-                    Console.WriteLine($"PostgreSQL версия: {version}");
-
-                    // Проверим количество пользователей
-                    command = new NpgsqlCommand("SELECT COUNT(*) FROM users", connection);
-                    var userCount = command.ExecuteScalar();
-                    Console.WriteLine($"Количество пользователей: {userCount}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Ошибка подключения: {ex.Message}");
-                Console.WriteLine($"Тип исключения: {ex.GetType().Name}");
-
-                if (ex.InnerException != null)
-                {
-                    Console.WriteLine($"Внутреннее исключение: {ex.InnerException.Message}");
-                }
-            }
-            Console.WriteLine("=== КОНЕЦ ПРОВЕРКИ ===\n");
-        }
-
-        public void FixAllConnectionStrings()
-        {
-            Console.WriteLine("\n=== ПРОВЕРКА И ИСПРАВЛЕНИЕ СТРОК ПОДКЛЮЧЕНИЯ ===");
-
-            try
-            {
-                // Тестовый запрос для проверки подключения
-                using (var testConnection = new NpgsqlConnection(_connectionString))
-                {
-                    testConnection.Open();
-                    Console.WriteLine("✅ Основное подключение работает");
-
-                    var testCommand = new NpgsqlCommand("SELECT 1", testConnection);
-                    var result = testCommand.ExecuteScalar();
-                    Console.WriteLine($"✅ Тестовый запрос: {result}");
-                }
-
-                Console.WriteLine("\n=== ВСЕ СТРОКИ ПОДКЛЮЧЕНИЯ ПРОВЕРЕНЫ ===");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Ошибка при проверке подключения: {ex.Message}");
-                Console.WriteLine($"Проверьте строку подключения в App.config");
             }
         }
     }

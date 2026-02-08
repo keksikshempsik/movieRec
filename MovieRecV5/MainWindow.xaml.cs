@@ -34,39 +34,10 @@ namespace MovieRecV5
                 CurrentUser = null;
                 _throttler = new SemaphoreSlim(3, 3);
 
-                Console.WriteLine("=== ЗАПУСК ПРИЛОЖЕНИЯ ===");
-
                 // 3. Инициализация базы данных
-                Console.WriteLine("Подключение к базе данных...");
                 _databaseService = new PostgresDatabaseService();
 
-                try
-                {
-                    // Проверяем подключение
-                    if (_databaseService.TestDatabaseConnection())
-                    {
-                        Console.WriteLine("✅ Подключение к PostgreSQL успешно");
-
-                        // Инициализируем базу данных
-                        Console.WriteLine("Инициализация базы данных...");
-                        _databaseService.InitializeDatabase();
-                        Console.WriteLine("✅ База данных готова");
-                    }
-                    else
-                    {
-                        Console.WriteLine("⚠️ Не удалось подключиться к PostgreSQL");
-                        MessageBox.Show("Не удалось подключиться к базе данных PostgreSQL. " +
-                                      "Приложение будет работать в ограниченном режиме.",
-                                      "Предупреждение",
-                                      MessageBoxButton.OK,
-                                      MessageBoxImage.Warning);
-                    }
-                }
-                catch (Exception dbEx)
-                {
-                    Console.WriteLine($"⚠️ Ошибка базы данных: {dbEx.Message}");
-                    // Не прерываем работу приложения из-за ошибки БД
-                }
+                _databaseService.InitializeDatabase();
 
                 // 4. Настройка элементов управления
                 SearchTextBox.KeyDown += SearchTextBox_KeyDown;
@@ -76,22 +47,8 @@ namespace MovieRecV5
                 SearchTextBox.GotFocus += SearchTextBox_GotFocus;
                 SearchTextBox.LostFocus += SearchTextBox_LostFocus;
 
-                // Проверяем структуру базы данных
-                Console.WriteLine("\nПроверка структуры базы данных...");
-                _databaseService.VerifyDatabaseStructure();
-
-                // Проверяем пароль пользователя по умолчанию
-                Console.WriteLine("\nПроверка пароля пользователя...");
-                _databaseService.CheckDefaultUserPassword();
-
-                // Проверяем подключение
-                Console.WriteLine("\nПроверка подключения к базе данных...");
-                _databaseService.DebugConnection();
-
                 // Скрываем прогресс-бар
                 SearchProgressBar.Visibility = Visibility.Hidden;
-
-                Console.WriteLine("=== ПРИЛОЖЕНИЕ ЗАПУЩЕНО ===");
             }
             catch (Exception ex)
             {
@@ -242,13 +199,11 @@ namespace MovieRecV5
                     // ФИЛЬТРУЕМ: пропускаем фильмы с оценками меньше 100
                     if (fastResult.VoteCount < 100)
                     {
-                        Console.WriteLine($"⏭️ Пропускаем (мало оценок): {fastResult.Title} ({fastResult.VoteCount} оценок)");
                         processedCount++;
                         SearchProgressBar.Value = 30 + (processedCount * progressStep);
                         continue;
                     }
 
-                    // Ищем фильм в базе по Title и Year
                     var moviesFromDb = _databaseService.SearchMoviesInDatabase(searchTitle, userId, 100);
                     var existingMovie = moviesFromDb.FirstOrDefault(m =>
                         string.Equals(m.Title, fastResult.Title, StringComparison.OrdinalIgnoreCase) &&
@@ -256,10 +211,8 @@ namespace MovieRecV5
 
                     if (existingMovie != null)
                     {
-                        // Проверяем оценку в базе
                         if (existingMovie.VoteCount < 100)
                         {
-                            Console.WriteLine($"⏭️ Пропускаем (мало оценок в базе): {existingMovie.Title} ({existingMovie.VoteCount} оценок)");
                             processedCount++;
                             SearchProgressBar.Value = 30 + (processedCount * progressStep);
                             continue;
@@ -285,22 +238,18 @@ namespace MovieRecV5
                         var fullMovie = await parser.GetMovieByTmdbId(fastResult.Id);
                         if (fullMovie != null && !string.IsNullOrEmpty(fullMovie.Poster))
                         {
-                            // Проверяем оценку у загруженного фильма
                             if (fullMovie.VoteCount < 100)
                             {
-                                Console.WriteLine($"⏭️ Пропускаем (мало оценок при загрузке): {fullMovie.Title} ({fullMovie.VoteCount} оценок)");
                                 processedCount++;
                                 SearchProgressBar.Value = 30 + (processedCount * progressStep);
                                 continue;
                             }
 
-                            // Убедимся, что Id установлен правильно
                             fullMovie.Id = fastResult.Id;
 
                             // Сохраняем в базу
                             _databaseService.AddMovie(fullMovie);
 
-                            // Обновляем статусы пользователя
                             if (userId > 0)
                             {
                                 fullMovie.IsWatched = _databaseService.IsMovieWatched(userId, fullMovie.Slug);
@@ -308,14 +257,12 @@ namespace MovieRecV5
                             }
 
                             finalMovies.Add(fullMovie);
-                            Console.WriteLine($"➕ Добавлен из TMDB: {fullMovie.Title} ({fullMovie.Year}, {fullMovie.VoteCount} оценок)");
                         }
                     }
 
                     processedCount++;
                     SearchProgressBar.Value = 30 + (processedCount * progressStep);
 
-                    // Задержка чтобы не перегружать API
                     await Task.Delay(150);
                 }
 
@@ -329,13 +276,12 @@ namespace MovieRecV5
                         fm.Year == m.Year))
                     .OrderByDescending(m => m.VoteCount)
                     .ThenByDescending(m => m.Rating)
-                    .Take(15) // Берем больше, так как фильтровали
+                    .Take(15)
                     .ToList();
 
                 if (additionalMoviesFromDb.Any())
                 {
                     finalMovies.AddRange(additionalMoviesFromDb);
-                    Console.WriteLine($"📁 Добавлено из базы (дополнительно): {additionalMoviesFromDb.Count} фильмов");
                 }
 
                 // 4. Сортируем по популярности
@@ -347,7 +293,6 @@ namespace MovieRecV5
 
                 SearchProgressBar.Value = 100;
 
-                // Показываем результаты
                 if (!finalMovies.Any())
                 {
                     MessageBox.Show("Фильмы не найдены. Попробуйте другой запрос или снизьте требования к популярности.");
@@ -360,7 +305,6 @@ namespace MovieRecV5
             catch (Exception ex)
             {
                 MessageBox.Show($"Ошибка: {ex.Message}");
-                Console.WriteLine($"❌ Ошибка поиска: {ex}");
             }
             finally
             {
@@ -757,22 +701,17 @@ namespace MovieRecV5
             {
                 try
                 {
-                    // Получаем обновленные данные пользователя из базы
                     var updatedUser = _databaseService.GetUserByLogin(CurrentUser.Login);
 
                     if (updatedUser != null)
                     {
-                        // Обновляем текущего пользователя
                         CurrentUser = updatedUser;
 
-                        // Обновляем кнопку профиля
                         UpdateUserButton();
 
-                        // Перерисовываем фильмы, чтобы обновить цвета
                         if (!string.IsNullOrWhiteSpace(SearchTextBox.Text) &&
                             SearchTextBox.Text != "Введите название...")
                         {
-                            // Повторяем поиск, чтобы обновить отображение фильмов
                             SearchButton_Click(null, null);
                         }
                     }
