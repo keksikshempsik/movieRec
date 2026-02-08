@@ -179,9 +179,16 @@ namespace MovieRecV5.ViewModels
             try
             {
                 var dbService = new PostgresDatabaseService();
-                if (dbService.UpdateUserPassword(currentUser.Id, newPassword))
+
+                // ПРОВЕРКА: правильно ли хэшируется пароль
+                string hashedPassword = User.HashPassword(newPassword);
+                Console.WriteLine($"Новый пароль: '{newPassword}'");
+                Console.WriteLine($"Хэш нового пароля: {hashedPassword}");
+
+                if (dbService.UpdateUserPassword(currentUser.Id, newPassword))  // Метод должен хэшировать внутри
                 {
-                    Console.WriteLine("Password updated successfully");
+                    MessageBox.Show("Пароль успешно обновлен", "Успех",
+                                  MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else
                 {
@@ -191,7 +198,7 @@ namespace MovieRecV5.ViewModels
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error updating password: {ex.Message}");
+                Console.WriteLine($"Ошибка обновления пароля: {ex.Message}");
                 MessageBox.Show($"Ошибка обновления пароля: {ex.Message}", "Ошибка",
                               MessageBoxButton.OK, MessageBoxImage.Error);
             }

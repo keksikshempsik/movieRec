@@ -1162,16 +1162,43 @@ namespace MovieRecV5.Services
                     var command = new NpgsqlCommand(
                         "UPDATE users SET password = @password WHERE id = @userId",
                         connection);
-                    command.Parameters.AddWithValue("@password", User.HashPassword(newPassword));
+
+                    // УБЕДИТЕСЬ, что пароль хэшируется здесь
+                    string hashedPassword = User.HashPassword(newPassword);
+                    Console.WriteLine($"Обновление пароля для userId={userId}");
+                    Console.WriteLine($"Хэшированный пароль: {hashedPassword}");
+
+                    command.Parameters.AddWithValue("@password", hashedPassword);  // Должен быть хэш
                     command.Parameters.AddWithValue("@userId", userId);
 
-                    return command.ExecuteNonQuery() > 0;
+                    int rowsAffected = command.ExecuteNonQuery();
+                    Console.WriteLine($"Строк обновлено: {rowsAffected}");
+
+                    return rowsAffected > 0;
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error updating password: {ex.Message}");
                 return false;
+            }
+        }
+
+        //==============
+
+        public bool EmailExists(string email)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                var command = new NpgsqlCommand(
+                    "SELECT COUNT(*) FROM users WHERE email = @email",
+                    connection);
+                command.Parameters.AddWithValue("@email", email);
+
+                var count = Convert.ToInt64(command.ExecuteScalar());
+                return count > 0;
             }
         }
     }

@@ -1,9 +1,10 @@
-﻿using System;
+﻿using MovieRecV5.Models;
+using MovieRecV5.Services;
+using Npgsql;
+using System;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
-using System.Text.RegularExpressions;
-using MovieRecV5.Models;
-using MovieRecV5.Services;
 
 namespace MovieRecV5.ViewModels
 {
@@ -123,84 +124,184 @@ namespace MovieRecV5.ViewModels
 
         private void HandleRegistration()
         {
-            if (string.IsNullOrWhiteSpace(txtLogin.Text))
+            try
             {
-                throw new Exception("Введите логин");
-            }
+                Console.WriteLine("=== НАЧАЛО РЕГИСТРАЦИИ ===");
 
-            if (txtLogin.Text.Length < 3)
-            {
-                throw new Exception("Логин должен содержать минимум 3 символа");
-            }
-
-            if (string.IsNullOrWhiteSpace(txtDisplayName.Text))
-            {
-                throw new Exception("Введите отображаемое имя");
-            }
-
-            if (txtDisplayName.Text.Length < 2)
-            {
-                throw new Exception("Отображаемое имя должно содержать минимум 2 символа");
-            }
-
-            if (string.IsNullOrWhiteSpace(txtEmail.Text))
-            {
-                throw new Exception("Введите email");
-            }
-
-            if (!IsValidEmail(txtEmail.Text))
-            {
-                throw new Exception("Введите корректный email адрес");
-            }
-
-            if (string.IsNullOrWhiteSpace(txtPassword.Password))
-            {
-                throw new Exception("Введите пароль");
-            }
-
-            if (txtPassword.Password.Length < 6)
-            {
-                throw new Exception("Пароль должен содержать минимум 6 символов");
-            }
-
-            if (databaseService.UserExistsByLogin(txtLogin.Text))
-            {
-                throw new Exception("Пользователь с таким логином уже существует");
-            }
-
-            var user = new User
-            {
-                Login = txtLogin.Text.Trim(),
-                DisplayName = txtDisplayName.Text.Trim(),
-                Password = User.HashPassword(txtPassword.Password),
-                Email = txtEmail.Text.Trim(),
-                AvatarUrl = "default"
-            };
-
-            if (databaseService.AddUser(user))
-            {
-                var registeredUser = databaseService.GetUserByLogin(user.Login);
-
-                if (registeredUser != null)
+                // Проверка логина
+                if (string.IsNullOrWhiteSpace(txtLogin.Text))
                 {
-                    mainWindow.LoginUser(registeredUser);
-                    this.Close();
+                    throw new Exception("Введите логин");
+                }
 
-                    var profileWindow = new UserProfileWindow(registeredUser, mainWindow)
+                if (txtLogin.Text.Length < 3)
+                {
+                    throw new Exception("Логин должен содержать минимум 3 символа");
+                }
+
+                // После проверки логина добавьте:
+                if (databaseService.EmailExists(txtEmail.Text))
+                {
+                    throw new Exception("Пользователь с таким email уже существует");
+                }
+
+                // Проверка отображаемого имени (новое поле)
+                if (string.IsNullOrWhiteSpace(txtDisplayName.Text))
+                {
+                    throw new Exception("Введите отображаемое имя");
+                }
+
+                if (txtDisplayName.Text.Length < 2)
+                {
+                    throw new Exception("Отображаемое имя должно содержать минимум 2 символа");
+                }
+
+                // Проверка email
+                if (string.IsNullOrWhiteSpace(txtEmail.Text))
+                {
+                    throw new Exception("Введите email");
+                }
+
+                if (!IsValidEmail(txtEmail.Text))
+                {
+                    throw new Exception("Введите корректный email адрес");
+                }
+
+                // Проверка пароля
+                if (string.IsNullOrWhiteSpace(txtPassword.Password))
+                {
+                    throw new Exception("Введите пароль");
+                }
+
+                if (txtPassword.Password.Length < 6)
+                {
+                    throw new Exception("Пароль должен содержать минимум 6 символов");
+                }
+
+                Console.WriteLine($"Логин для проверки: '{txtLogin.Text}'");
+
+                // Проверка существования пользователя
+                if (databaseService.UserExistsByLogin(txtLogin.Text))
+                {
+                    throw new Exception("Пользователь с таким логином уже существует");
+                }
+
+                // Проверка email на уникальность
+                Console.WriteLine("Проверяем email на уникальность...");
+                var existingUserByEmail = databaseService.FindUserByLogin(txtEmail.Text); // Замените на метод проверки email, если есть
+                if (existingUserByEmail != null && existingUserByEmail.Email == txtEmail.Text)
+                {
+                    throw new Exception("Пользователь с таким email уже существует");
+                }
+
+                Console.WriteLine("Создаем объект пользователя...");
+                // Создаем и добавляем пользователя
+                var user = new User
+                {
+                    Login = txtLogin.Text.Trim(),
+                    DisplayName = txtDisplayName.Text.Trim(),
+                    Password = User.HashPassword(txtPassword.Password),
+                    Email = txtEmail.Text.Trim(),
+                    AvatarUrl = "default"
+                };
+
+                // Отладочная информация
+                Console.WriteLine($"Данные пользователя:");
+                Console.WriteLine($"  Логин: {user.Login}");
+                Console.WriteLine($"  DisplayName: {user.DisplayName}");
+                Console.WriteLine($"  Email: {user.Email}");
+                Console.WriteLine($"  Password hash: {user.Password}");
+                Console.WriteLine($"  AvatarUrl: {user.AvatarUrl}");
+
+                Console.WriteLine("Пытаемся добавить пользователя в базу...");
+                if (databaseService.AddUser(user))
+                {
+                    Console.WriteLine("Пользователь добавлен в базу, получаем данные...");
+
+                    // Получаем пользователя из базы
+                    var registeredUser = databaseService.GetUserByLogin(user.Login);
+
+                    if (registeredUser != null)
                     {
-                        Owner = mainWindow,
-                        WindowStartupLocation = WindowStartupLocation.CenterOwner
-                    };
-                    profileWindow.ShowDialog();
+                        Console.WriteLine($"Успешная регистрация! ID пользователя: {registeredUser.Id}");
+
+                        // Входим в систему
+                        mainWindow.LoginUser(registeredUser);
+
+                        Console.WriteLine("Закрываем окно регистрации...");
+                        this.Close();
+
+                        Console.WriteLine("Открываем профиль...");
+                        var profileWindow = new UserProfileWindow(registeredUser, mainWindow)
+                        {
+                            Owner = mainWindow,
+                            WindowStartupLocation = WindowStartupLocation.CenterOwner
+                        };
+                        profileWindow.ShowDialog();
+
+                        Console.WriteLine("=== РЕГИСТРАЦИЯ УСПЕШНО ЗАВЕРШЕНА ===");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Ошибка: пользователь не найден после регистрации");
+                        throw new Exception("Ошибка при получении данных пользователя после регистрации");
+                    }
                 }
                 else
                 {
-                    throw new Exception("Ошибка при получении данных пользователя после регистрации");
+                    Console.WriteLine("Ошибка: AddUser вернул false");
+                    throw new Exception("Ошибка при регистрации пользователя (возможно, пользователь уже существует)");
                 }
             }
-            else
+            catch (PostgresException pgEx)
             {
-                throw new Exception("Ошибка при регистрации пользователя");
+                Console.WriteLine($"Ошибка PostgreSQL при регистрации:");
+                Console.WriteLine($"  SQL State: {pgEx.SqlState}");
+                Console.WriteLine($"  Message: {pgEx.Message}");
+                Console.WriteLine($"  Detail: {pgEx.Detail}");
+
+                string errorMessage = "Ошибка при регистрации: ";
+
+                // Расшифровка кодов ошибок PostgreSQL
+                switch (pgEx.SqlState)
+                {
+                    case "23505": // unique_violation
+                        if (pgEx.Message.Contains("users_login_key"))
+                            errorMessage += "Пользователь с таким логином уже существует";
+                        else if (pgEx.Message.Contains("users_email_key"))
+                            errorMessage += "Пользователь с таким email уже существует";
+                        else
+                            errorMessage += "Нарушение уникальности данных";
+                        break;
+                    case "23514": // check_violation
+                        errorMessage += "Некорректные данные пользователя";
+                        break;
+                    case "23502": // not_null_violation
+                        errorMessage += "Не заполнены обязательные поля";
+                        break;
+                    default:
+                        errorMessage += pgEx.Message;
+                        break;
+                }
+
+                MessageBox.Show(errorMessage, "Ошибка регистрации",
+                               MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка регистрации: {ex.GetType().Name}");
+                Console.WriteLine($"Сообщение: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Внутренняя ошибка: {ex.InnerException.Message}");
+                }
+
+                MessageBox.Show($"Ошибка регистрации: {ex.Message}", "Ошибка",
+                               MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                Console.WriteLine("=== КОНЕЦ РЕГИСТРАЦИИ ===\n");
             }
         }
 
