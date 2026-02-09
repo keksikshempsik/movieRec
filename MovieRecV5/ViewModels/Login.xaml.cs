@@ -30,6 +30,8 @@ namespace MovieRecV5.ViewModels
 
             // Устанавливаем режим входа по умолчанию
             rbLogin.IsChecked = true;
+
+            LoadSavedLogin();
         }
 
         private void RbAuthMode_Checked(object sender, RoutedEventArgs e)
@@ -92,6 +94,20 @@ namespace MovieRecV5.ViewModels
 
                 if (user != null)
                 {
+                    if (chkRememberMe.IsChecked == true)
+                    {
+                        var settings = new SettingsManager.AppSettings
+                        {
+                            LastLogin = user.Login,
+                            LastLoginTime = DateTime.Now,
+                            RememberMe = true
+                        };
+                        SettingsManager.SaveSettings(settings);
+                    }
+                    else
+                    {
+                        SettingsManager.ClearSettings();
+                    }
 
                     mainWindow.LoginUser(user);
 
@@ -111,12 +127,6 @@ namespace MovieRecV5.ViewModels
             }
             catch (Exception ex)
             {
-
-                if (ex.InnerException != null)
-                {
-                    Console.WriteLine($"Внутреннее исключение: {ex.InnerException.Message}");
-                }
-
                 MessageBox.Show($"Ошибка входа: {ex.Message}", "Ошибка",
                                MessageBoxButton.OK, MessageBoxImage.Error);
             }
@@ -331,6 +341,17 @@ namespace MovieRecV5.ViewModels
             if (e.Key == System.Windows.Input.Key.Enter)
             {
                 BtnSubmit_Click(sender, e);
+            }
+        }
+
+        private void LoadSavedLogin()
+        {
+            var settings = SettingsManager.LoadSettings();
+            if (!string.IsNullOrEmpty(settings.LastLogin) && settings.RememberMe)
+            {
+                txtLogin.Text = settings.LastLogin;
+                // Можно автоматически сфокусироваться на поле пароля
+                txtPassword.Focus();
             }
         }
     }

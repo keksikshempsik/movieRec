@@ -36,11 +36,13 @@ namespace MovieRecV5
 
                 // 3. Инициализация базы данных
                 _databaseService = new PostgresDatabaseService();
-
                 _databaseService.InitializeDatabase();
 
                 // 4. Настройка элементов управления
                 SearchTextBox.KeyDown += SearchTextBox_KeyDown;
+
+                AutoLogin();
+
                 UpdateUserButton();
 
                 // 5. Настройка начального состояния
@@ -720,6 +722,29 @@ namespace MovieRecV5
                 {
                     Console.WriteLine($"Error refreshing user data: {ex.Message}");
                 }
+            }
+        }
+
+        private void AutoLogin()
+        {
+            try
+            {
+                var settings = SettingsManager.LoadSettings();
+
+                if (settings.RememberMe && !string.IsNullOrEmpty(settings.LastLogin))
+                {
+                    var user = _databaseService.FindUserByLogin(settings.LastLogin);
+
+                    if (user != null)
+                    {
+                        LoginUser(user);
+                        Console.WriteLine($"Автоматический вход выполнен для: {user.Login}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка автоматического входа: {ex.Message}");
             }
         }
     }

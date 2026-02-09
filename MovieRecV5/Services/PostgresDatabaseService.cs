@@ -862,7 +862,6 @@ namespace MovieRecV5.Services
                 var command = new NpgsqlCommand(
                     "SELECT * FROM users WHERE login = @login",
                     connection);
-
                 command.Parameters.AddWithValue("@login", login);
 
                 using (var reader = command.ExecuteReader())

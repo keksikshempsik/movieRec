@@ -523,6 +523,9 @@ namespace MovieRecV5.ViewModels
             {
                 mainWindow.LogoutUser();
                 this.Close();
+
+                MessageBox.Show("Вы вышли из аккаунта. Для входа используйте свои данные.",
+                               "Выход выполнен", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 

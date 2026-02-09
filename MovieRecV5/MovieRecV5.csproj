@@ -138,6 +138,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Services\PostgresDatabaseService.cs" />
+    <Compile Include="Services\SettingsManager.cs" />
     <Compile Include="ViewModels\EditProfileWindow.xaml.cs">
       <DependentUpon>EditProfileWindow.xaml</DependentUpon>
     </Compile>
