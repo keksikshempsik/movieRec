@@ -112,14 +112,21 @@ namespace MovieRecV5
 
                 UserProfileButton.Content = displayName;
                 UserProfileButton.ToolTip = $"Профиль пользователя: {CurrentUser.Login}";
-
                 UserProfileButton.FontWeight = FontWeights.SemiBold;
+
+                // Включаем кнопку рекомендаций
+                RecommendationsButton.IsEnabled = true;
+                RecommendationsButton.ToolTip = "Персональные рекомендации фильмов";
             }
             else
             {
                 UserProfileButton.Content = "Вход/Регистрация";
                 UserProfileButton.ToolTip = "Войти или зарегистрироваться";
                 UserProfileButton.FontWeight = FontWeights.Normal;
+
+                // Выключаем кнопку рекомендаций
+                RecommendationsButton.IsEnabled = false;
+                RecommendationsButton.ToolTip = "Для рекомендаций требуется вход в систему";
             }
         }
 
@@ -745,6 +752,43 @@ namespace MovieRecV5
             catch (Exception ex)
             {
                 Console.WriteLine($"Ошибка автоматического входа: {ex.Message}");
+            }
+        }
+
+        private void RecommendationsButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!IsLogged || CurrentUser == null)
+            {
+                MessageBox.Show("Для получения рекомендаций необходимо войти в систему",
+                               "Требуется вход",
+                               MessageBoxButton.OK,
+                               MessageBoxImage.Information);
+
+                // Показываем окно входа
+                var loginWindow = new Login(this)
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                loginWindow.ShowDialog();
+                return;
+            }
+
+            try
+            {
+                var recommendationsWindow = new RecommendationsWindow(CurrentUser)
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                recommendationsWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка открытия рекомендаций: {ex.Message}",
+                               "Ошибка",
+                               MessageBoxButton.OK,
+                               MessageBoxImage.Error);
             }
         }
     }

@@ -1200,5 +1200,10 @@ namespace MovieRecV5.Services
                 return count > 0;
             }
         }
+
+        public string GetConnectionString()
+        {
+            return _connectionString;
+        }
     }
 }
