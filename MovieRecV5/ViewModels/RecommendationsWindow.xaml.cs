@@ -24,7 +24,6 @@ namespace MovieRecV5.ViewModels
             _currentUser = user;
             _databaseService = new PostgresDatabaseService();
 
-            // Загружаем рекомендации при открытии окна
             Loaded += async (s, e) => await LoadRecommendationsAsync();
         }
 
@@ -32,12 +31,10 @@ namespace MovieRecV5.ViewModels
         {
             try
             {
-                // Показываем прогресс
                 LoadingProgressBar.Visibility = Visibility.Visible;
                 RecommendationsInfoText.Text = "Анализируем ваши предпочтения...";
                 StatusText.Text = "Загрузка...";
 
-                // Получаем рекомендации
                 _recommendedMovies = await GetRecommendationsAsync();
 
                 // Обновляем интерфейс
@@ -109,6 +106,18 @@ namespace MovieRecV5.ViewModels
                     .Select(g => g.First())
                     .Take(30) // Ограничиваем количество
                     .ToList();
+
+                foreach (var x in recommendations)
+                {
+                    if (!_databaseService.MovieExistsByTitleAndYear(x.Title, x.Year)){
+                        _databaseService.AddMovie(x);
+                        Console.WriteLine($"фильма {x.Title} нет в бд");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"фильм {x.Title} есть в бд");
+                    }
+                }
 
             }
             catch (Exception ex)
