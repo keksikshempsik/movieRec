@@ -935,21 +935,10 @@ namespace MovieRecV5.Services
             }
         }
 
-        public int GetWatchedMoviesCount(int userId)
+        private async Task<List<string>> GetWatchedMovieSlugsAsync()
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                connection.Open();
-
-                var command = connection.CreateCommand();
-                command.CommandText = @"
-                SELECT COUNT(*) FROM watched_movies
-                WHERE user_id = @userId";
-
-                command.Parameters.AddWithValue("@userId", userId);
-
-                return Convert.ToInt32(command.ExecuteScalar());
-            }
+            var watchedMovies = _databaseService.GetWatchedMovies(_currentUser.Id);
+            return watchedMovies.Select(m => m.Slug).ToList();
         }
 
         public List<Movie> GetWatchedMovies(int userId)

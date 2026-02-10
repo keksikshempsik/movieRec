@@ -76,10 +76,14 @@ namespace MovieRecV5.ViewModels
                 var userRatings = await GetUserRatingsAsync();
                 var watchedMovies = _databaseService.GetWatchedMovies(_currentUser.Id);
 
+                // Получаем список slug просмотренных фильмов для фильтрации
+                var watchedMovieSlugs = watchedMovies.Select(m => m.Slug).ToList();
+
                 if (userRatings.Count < 3)
                 {
-                    // Мало оценок - показываем популярные фильмы
-                    return await GetPopularMoviesAsync(20);
+                    // Мало оценок - показываем популярные фильмы, исключая просмотренные
+                    var popularMovies = await GetPopularMoviesAsync(30);
+                    return FilterOutWatchedMovies(popularMovies, watchedMovieSlugs, 20);
                 }
 
                 // 2. Анализируем предпочтения
@@ -87,35 +91,46 @@ namespace MovieRecV5.ViewModels
                 var favoriteYears = GetFavoriteYears(userRatings);
                 var avgRating = userRatings.Average(r => r.Rating);
 
-                // 3. Ищем рекомендации в базе
-                recommendations = await FindRecommendedMoviesAsync(favoriteGenres, favoriteYears, avgRating, watchedMovies);
+                // 3. Ищем рекомендации в базе, исключая просмотренные
+                recommendations = await FindRecommendedMoviesAsync(
+                    favoriteGenres,
+                    favoriteYears,
+                    avgRating,
+                    watchedMovieSlugs
+                );
 
-                // 4. Если мало рекомендаций - добавляем популярные
+                // 4. Если мало рекомендаций - добавляем популярные, исключая просмотренные
                 if (recommendations.Count < 10)
                 {
-                    var popularMovies = await GetPopularMoviesAsync(15);
-                    recommendations.AddRange(popularMovies
-                        .Where(p => !recommendations.Any(r => r.Id == p.Id)
-                                 && !watchedMovies.Any(w => w.Id == p.Id)));
+                    var popularMovies = await GetPopularMoviesAsync(20);
+                    var filteredPopular = FilterOutWatchedMovies(popularMovies, watchedMovieSlugs, 15);
+
+                    // Добавляем только те, которых еще нет в рекомендациях
+                    foreach (var movie in filteredPopular)
+                    {
+                        if (!recommendations.Any(r => r.Id == movie.Id) &&
+                            !watchedMovieSlugs.Contains(movie.Slug))
+                        {
+                            recommendations.Add(movie);
+                        }
+                    }
                 }
 
-                // Убираем дубликаты и уже просмотренные
+                // Убираем дубликаты и уже просмотренные (дополнительная проверка)
                 recommendations = recommendations
-                    .Where(m => !watchedMovies.Any(w => w.Id == m.Id))
+                    .Where(m => !watchedMovieSlugs.Contains(m.Slug)) // Основная фильтрация
                     .GroupBy(m => m.Id)
                     .Select(g => g.First())
                     .Take(30) // Ограничиваем количество
                     .ToList();
 
-                foreach (var x in recommendations)
+                // Сохраняем фильмы в базу, если их там нет
+                foreach (var movie in recommendations)
                 {
-                    if (!_databaseService.MovieExistsByTitleAndYear(x.Title, x.Year)){
-                        _databaseService.AddMovie(x);
-                        Console.WriteLine($"фильма {x.Title} нет в бд");
-                    }
-                    else
+                    if (!_databaseService.MovieExistsByTitleAndYear(movie.Title, movie.Year))
                     {
-                        Console.WriteLine($"фильм {x.Title} есть в бд");
+                        _databaseService.AddMovie(movie);
+                        Console.WriteLine($"Фильма {movie.Title} нет в бд");
                     }
                 }
 
@@ -128,10 +143,128 @@ namespace MovieRecV5.ViewModels
             return recommendations;
         }
 
+        // Вспомогательный метод для фильтрации просмотренных фильмов
+        private List<Movie> FilterOutWatchedMovies(List<Movie> movies, List<string> watchedSlugs, int limit = int.MaxValue)
+        {
+            return movies
+                .Where(m => !watchedSlugs.Contains(m.Slug))
+                .Take(limit)
+                .ToList();
+        }
+
+        // Обновленный метод поиска рекомендаций
+        private async Task<List<Movie>> FindRecommendedMoviesAsync(
+            List<string> favoriteGenres,
+            List<int> favoriteYears,
+            double avgRating,
+            List<string> watchedMovieSlugs) // Принимаем список просмотренных slug
+        {
+            var recommendations = new List<Movie>();
+
+            try
+            {
+                using (var connection = new Npgsql.NpgsqlConnection(_databaseService.GetConnectionString()))
+                {
+                    await connection.OpenAsync();
+
+                    // Строим запрос с исключением просмотренных фильмов
+                    string query = @"
+                SELECT * FROM movies 
+                WHERE vote_count >= 100 
+                  AND rating >= @minRating
+                  AND slug NOT IN (SELECT UNNEST(@watchedSlugs::text[]))";
+
+                    var command = new Npgsql.NpgsqlCommand(query, connection);
+                    command.Parameters.AddWithValue("@minRating", Math.Max(6.0, avgRating - 1));
+
+                    // Преобразуем список slug в массив PostgreSQL
+                    var watchedSlugsArray = watchedMovieSlugs.ToArray();
+                    command.Parameters.AddWithValue("@watchedSlugs", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Text,
+                        watchedSlugsArray.Length > 0 ? watchedSlugsArray : new[] { "" });
+
+                    // Добавляем условия по жанрам если есть
+                    if (favoriteGenres.Any())
+                    {
+                        query += " AND (";
+                        for (int i = 0; i < favoriteGenres.Count; i++)
+                        {
+                            query += $" genres::text LIKE @genre{i} ";
+                            if (i < favoriteGenres.Count - 1) query += " OR ";
+                            command.Parameters.AddWithValue($"@genre{i}", $"%{favoriteGenres[i]}%");
+                        }
+                        query += " )";
+                    }
+
+                    // Добавляем условия по годам если есть
+                    if (favoriteYears.Any())
+                    {
+                        query += " AND year IN (";
+                        for (int i = 0; i < favoriteYears.Count; i++)
+                        {
+                            query += $"@year{i}";
+                            if (i < favoriteYears.Count - 1) query += ", ";
+                            command.Parameters.AddWithValue($"@year{i}", favoriteYears[i]);
+                        }
+                        query += ")";
+                    }
+
+                    query += " ORDER BY rating DESC, vote_count DESC LIMIT 50";
+                    command.CommandText = query;
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var movie = new Movie
+                            {
+                                Id = reader["id"] != DBNull.Value ? Convert.ToInt32(reader["id"]) : 0,
+                                Title = reader["title"]?.ToString() ?? "",
+                                Slug = reader["slug"]?.ToString() ?? "",
+                                Year = reader["year"] != DBNull.Value ? Convert.ToInt32(reader["year"]) : 0,
+                                Description = reader["description"]?.ToString() ?? "",
+                                Poster = reader["poster"]?.ToString() ?? "",
+                                VoteCount = reader["vote_count"] != DBNull.Value ? Convert.ToInt32(reader["vote_count"]) : 0,
+                                Rating = reader["rating"] != DBNull.Value ? Convert.ToSingle(reader["rating"]) : 0f,
+                                Genres = new List<string>()
+                            };
+
+                            string genresJson = reader["genres"]?.ToString();
+                            if (!string.IsNullOrEmpty(genresJson))
+                            {
+                                try
+                                {
+                                    movie.Genres = Newtonsoft.Json.JsonConvert.DeserializeObject<List<string>>(genresJson)
+                                                ?? new List<string>();
+                                }
+                                catch { }
+                            }
+
+                            // Дополнительная проверка (на всякий случай)
+                            if (!watchedMovieSlugs.Contains(movie.Slug))
+                            {
+                                recommendations.Add(movie);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка поиска рекомендаций: {ex.Message}");
+            }
+
+            return recommendations;
+        }
+
         private async Task<List<Movie>> GetPopularMoviesAsync(int count)
         {
             var parser = new TmdbParser();
-            return await parser.GetPopularMovies(1);
+            var movies = await parser.GetPopularMovies(1);
+
+            // Исключаем фильмы без постера
+            movies = movies.Where(m => !string.IsNullOrEmpty(m.Poster)).ToList();
+
+            return movies.Take(count).ToList();
         }
 
         private async Task<List<(Movie Movie, int Rating)>> GetUserRatingsAsync()
@@ -552,6 +685,12 @@ namespace MovieRecV5.ViewModels
         private void RateMoviesButton_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
+        }
+
+        private async Task<List<string>> GetWatchedMovieSlugsAsync()
+        {
+            var watchedMovies = _databaseService.GetWatchedMovies(_currentUser.Id);
+            return watchedMovies.Select(m => m.Slug).ToList();
         }
     }
 }

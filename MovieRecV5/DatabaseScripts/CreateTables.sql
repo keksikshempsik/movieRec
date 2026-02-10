@@ -1,4 +1,6 @@
-﻿-- Таблица фильмов
+﻿
+
+-- Таблица фильмов
 CREATE TABLE IF NOT EXISTS movies (
     id SERIAL PRIMARY KEY,
     title TEXT NOT NULL,
