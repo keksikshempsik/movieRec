@@ -810,26 +810,22 @@ namespace MovieRecV5
                 int userId = CurrentUser?.Id ?? 0;
                 List<Movie> popularMovies = new List<Movie>();
 
-                // 1. Сначала пробуем получить популярные фильмы из базы данных
-                var moviesFromDb = _databaseService.GetPopularMoviesFromDatabase(30, 100);
+                // Всегда загружаем популярные фильмы из TMDB
+                Console.WriteLine("🌐 Загружаем популярные фильмы из TMDB API...");
 
-                if (moviesFromDb.Any())
+                popularMovies = await _tmdbParser.GetPopularMoviesAsync(1, 100, 30);
+
+                Console.WriteLine($"✅ Загружено {popularMovies.Count} популярных фильмов из TMDB");
+
+                // Сохраняем фильмы в базу данных для кэширования
+                foreach (var movie in popularMovies)
                 {
-                    Console.WriteLine($"📁 Загружено {moviesFromDb.Count} популярных фильмов из базы данных");
-                    popularMovies.AddRange(moviesFromDb);
-                }
-                else
-                {
-                    // 2. Если в базе нет фильмов, загружаем из TMDB
-                    Console.WriteLine("🌐 База данных пуста, загружаем популярные фильмы из TMDB...");
-
-                    var tmdbMovies = await _tmdbParser.GetPopularMoviesAsync(1, 100, 30);
-
-                    foreach (var movie in tmdbMovies)
+                    try
                     {
                         if (!_databaseService.MovieExists(movie.Slug))
                         {
                             _databaseService.AddMovie(movie);
+                            Console.WriteLine($"📁 Сохранен в БД: {movie.Title} ({movie.Year})");
                         }
 
                         if (userId > 0)
@@ -837,22 +833,16 @@ namespace MovieRecV5
                             movie.IsWatched = _databaseService.IsMovieWatched(userId, movie.Slug);
                             movie.InWatchList = _databaseService.IsInWatchList(userId, movie.Slug);
                         }
-
-                        popularMovies.Add(movie);
                     }
-                }
-
-                // 3. Обновляем статусы для текущего пользователя
-                if (userId > 0 && popularMovies.Any())
-                {
-                    foreach (var movie in popularMovies)
+                    catch (Exception ex)
                     {
-                        movie.IsWatched = _databaseService.IsMovieWatched(userId, movie.Slug);
-                        movie.InWatchList = _databaseService.IsInWatchList(userId, movie.Slug);
+                        Console.WriteLine($"⚠️ Ошибка при сохранении фильма {movie.Title}: {ex.Message}");
                     }
+
+                    await Task.Delay(50); // Небольшая задержка чтобы не перегружать
                 }
 
-                // 4. Отображаем популярные фильмы
+                // Отображаем популярные фильмы
                 if (popularMovies.Any())
                 {
                     SearchProgressBar.Value = 100;
@@ -868,12 +858,13 @@ namespace MovieRecV5
                     MoviesPanel.Children.Clear();
                     var noMoviesText = new TextBlock
                     {
-                        Text = "Не удалось загрузить популярные фильмы.\nПопробуйте выполнить поиск.",
+                        Text = "Не удалось загрузить популярные фильмы из TMDB.\nПопробуйте выполнить поиск.",
                         HorizontalAlignment = HorizontalAlignment.Center,
                         VerticalAlignment = VerticalAlignment.Center,
                         FontSize = 14,
                         Foreground = Brushes.Gray,
-                        TextAlignment = TextAlignment.Center
+                        TextAlignment = TextAlignment.Center,
+                        Margin = new Thickness(20)
                     };
                     MoviesPanel.Children.Add(noMoviesText);
                 }
@@ -886,12 +877,13 @@ namespace MovieRecV5
                 MoviesPanel.Children.Clear();
                 var errorText = new TextBlock
                 {
-                    Text = $"Ошибка загрузки: {ex.Message}\nПопробуйте выполнить поиск.",
+                    Text = $"Ошибка загрузки популярных фильмов из TMDB.\n{ex.Message}\n\nПопробуйте выполнить поиск.",
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center,
                     FontSize = 14,
                     Foreground = Brushes.Red,
-                    TextAlignment = TextAlignment.Center
+                    TextAlignment = TextAlignment.Center,
+                    Margin = new Thickness(20)
                 };
                 MoviesPanel.Children.Add(errorText);
             }

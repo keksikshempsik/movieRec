@@ -285,29 +285,54 @@ namespace MovieRecV5.Services
             }
         }
 
-        public async Task<List<Movie>> GetPopularMovies(int page = 1)
+        public async Task<List<Movie>> GetPopularMovies(int page = 1, int minVotes = 100, int maxMovies = 30)
         {
             var movies = new List<Movie>();
+            int currentPage = page;
+            int maxPages = 3; // Максимум 3 страницы (60 фильмов)
 
             try
             {
-                var popularUrl = $"https://api.themoviedb.org/3/movie/popular?api_key={_apiKey}&language=ru-RU&page={page}";
+                Console.WriteLine($"🌐 Загрузка популярных фильмов, страница {currentPage}...");
+
+                var popularUrl = $"https://api.themoviedb.org/3/movie/popular?api_key={_apiKey}&language=ru-RU&page={currentPage}";
                 var response = await _httpClient.GetStringAsync(popularUrl);
                 var jsonDoc = JsonDocument.Parse(response);
 
                 var results = jsonDoc.RootElement.GetProperty("results");
+                var totalPages = jsonDoc.RootElement.GetProperty("total_pages").GetInt32();
 
+                Console.WriteLine($"📊 Всего страниц популярных фильмов: {totalPages}");
+
+                // Загружаем фильмы с текущей страницы
                 foreach (var movieData in results.EnumerateArray())
                 {
                     var posterPath = movieData.GetProperty("poster_path").GetString();
                     if (string.IsNullOrEmpty(posterPath) || posterPath == "null")
                         continue;
 
+                    var voteCount = movieData.GetProperty("vote_count").GetInt32();
+                    if (voteCount < minVotes)
+                        continue;
+
                     var movie = await ParseMovieFromTmdbData(movieData);
                     if (movie != null)
+                    {
                         movies.Add(movie);
+                        Console.WriteLine($"✅ {movie.Title} ({movie.Year}) - {movie.VoteCount} оценок, ★ {movie.Rating:F1}");
+
+                        if (movies.Count >= maxMovies)
+                            break;
+                    }
                 }
 
+                // Если нужно больше фильмов и есть еще страницы
+                if (movies.Count < maxMovies && currentPage < totalPages && currentPage < maxPages)
+                {
+                    await Task.Delay(500); // Задержка перед загрузкой следующей страницы
+                    var nextPageMovies = await GetPopularMoviesAsync(currentPage + 1, minVotes, maxMovies - movies.Count);
+                    movies.AddRange(nextPageMovies);
+                }
             }
             catch (Exception ex)
             {
