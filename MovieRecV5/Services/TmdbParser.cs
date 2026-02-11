@@ -489,6 +489,44 @@ namespace MovieRecV5.Services
             }
         }
 
+        public async Task<List<Movie>> GetPopularMoviesAsync(int page = 1, int minVotes = 100, int maxMovies = 50)
+        {
+            var movies = new List<Movie>();
 
+            try
+            {
+                var popularUrl = $"https://api.themoviedb.org/3/movie/popular?api_key={_apiKey}&language=ru-RU&page={page}";
+                var response = await _httpClient.GetStringAsync(popularUrl);
+                var jsonDoc = JsonDocument.Parse(response);
+
+                var results = jsonDoc.RootElement.GetProperty("results");
+
+                foreach (var movieData in results.EnumerateArray())
+                {
+                    var posterPath = movieData.GetProperty("poster_path").GetString();
+                    if (string.IsNullOrEmpty(posterPath) || posterPath == "null")
+                        continue;
+
+                    var voteCount = movieData.GetProperty("vote_count").GetInt32();
+                    if (voteCount < minVotes)
+                        continue;
+
+                    var movie = await ParseMovieFromTmdbData(movieData);
+                    if (movie != null)
+                    {
+                        movies.Add(movie);
+
+                        if (movies.Count >= maxMovies)
+                            break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка при получении популярных фильмов: {ex.Message}");
+            }
+
+            return movies;
+        }
     }
 }

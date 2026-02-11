@@ -557,7 +557,7 @@ namespace MovieRecV5.Services
 
         // ФИЛЬМЫ
 
-        public List<Movie> SearchMoviesInDatabase(string searchTerm, int userId = 0, int minVotes = 100)
+        public List<Movie> SearchMoviesInDatabase(string searchTerm, int userId = 0, int minVotes = 100, bool requirePoster = true)
         {
             var movies = new List<Movie>();
 
@@ -565,14 +565,21 @@ namespace MovieRecV5.Services
             {
                 connection.Open();
 
-                var command = new NpgsqlCommand(@"
+                string query = @"
             SELECT * FROM movies 
             WHERE (LOWER(title) LIKE @searchTerm 
                OR LOWER(slug) LIKE @slugPattern
                OR genres::text LIKE @searchTerm)
-            AND vote_count >= @minVotes
-            ORDER BY vote_count DESC, rating DESC, year DESC
-            LIMIT 50", connection);
+            AND vote_count >= @minVotes";
+
+                if (requirePoster)
+                {
+                    query += " AND poster IS NOT NULL AND poster != 'null'";
+                }
+
+                query += " ORDER BY vote_count DESC, rating DESC, year DESC LIMIT 50";
+
+                var command = new NpgsqlCommand(query, connection);
 
                 var searchTermLower = searchTerm.ToLower();
                 var slugPattern = $"%{searchTermLower.Replace(" ", "-")}%";
@@ -1204,6 +1211,85 @@ namespace MovieRecV5.Services
         public string GetConnectionString()
         {
             return _connectionString;
+        }
+
+        public List<Movie> GetPopularMoviesFromDatabase(int limit = 30, int minVotes = 100)
+        {
+            var movies = new List<Movie>();
+
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    var command = new NpgsqlCommand(@"
+                SELECT * FROM movies 
+                WHERE vote_count >= @minVotes 
+                  AND poster IS NOT NULL 
+                  AND poster != 'null'
+                ORDER BY vote_count DESC, rating DESC 
+                LIMIT @limit", connection);
+
+                    command.Parameters.AddWithValue("@minVotes", minVotes);
+                    command.Parameters.AddWithValue("@limit", limit);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var movie = CreateMovieFromReader(reader);
+                            movies.Add(movie);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка при получении популярных фильмов из БД: {ex.Message}");
+            }
+
+            return movies;
+        }
+
+        public List<Movie> GetPopularMoviesFromDatabase(int limit = 30, int minVotes = 100, int userId = 0)
+        {
+            var movies = new List<Movie>();
+
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    var command = new NpgsqlCommand(@"
+                SELECT * FROM movies 
+                WHERE vote_count >= @minVotes 
+                  AND poster IS NOT NULL 
+                  AND poster != 'null'
+                  AND year > 1900
+                ORDER BY vote_count DESC, rating DESC 
+                LIMIT @limit", connection);
+
+                    command.Parameters.AddWithValue("@minVotes", minVotes);
+                    command.Parameters.AddWithValue("@limit", limit);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var movie = CreateMovieFromReader(reader, userId);
+                            movies.Add(movie);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка при получении популярных фильмов из БД: {ex.Message}");
+            }
+
+            return movies;
         }
     }
 }
