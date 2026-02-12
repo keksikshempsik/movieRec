@@ -27,36 +27,30 @@ namespace MovieRecV5
         {
             try
             {
-                // 1. Инициализация WPF компонентов
                 InitializeComponent();
 
-                // 2. Инициализация переменных
                 IsLogged = false;
                 CurrentUser = null;
 
-                // 3. Инициализация сервисов
                 _databaseService = new PostgresDatabaseService();
                 _tmdbParser = new TmdbParser();
 
-                // 4. Инициализация базы данных
                 _databaseService.InitializeDatabase();
 
-                // 5. Настройка элементов управления
                 SearchTextBox.KeyDown += SearchTextBox_KeyDown;
 
                 AutoLogin();
 
                 UpdateUserButton();
 
-                // 6. Настройка начального состояния
                 SearchTextBox.GotFocus += SearchTextBox_GotFocus;
                 SearchTextBox.LostFocus += SearchTextBox_LostFocus;
 
-                // Скрываем прогресс-бар
                 SearchProgressBar.Visibility = Visibility.Hidden;
 
-                // 7. Загружаем популярные фильмы при старте
                 Loaded += async (s, e) => await LoadPopularMoviesAsync();
+
+                this.Closing += MainWindow_Closing;
             }
             catch (Exception ex)
             {
@@ -141,6 +135,12 @@ namespace MovieRecV5
             CurrentUser = user;
             IsLogged = true;
             UpdateUserButton();
+
+            var settings = SettingsManager.LoadSettings();
+            settings.WasProperlyClosed = true;
+            SettingsManager.SaveSettings(settings);
+
+            Console.WriteLine($"✅ Пользователь {user.Login} вошел в систему");
         }
 
         public void LogoutUser()
@@ -148,6 +148,15 @@ namespace MovieRecV5
             CurrentUser = null;
             IsLogged = false;
             UpdateUserButton();
+
+            SearchTextBox.Text = "Введите название...";
+            SearchTextBox.Foreground = Brushes.Gray;
+
+            _ = LoadPopularMoviesAsync();
+
+            SettingsManager.MarkImproperShutdown();
+
+            Console.WriteLine("👋 Пользователь вышел из аккаунта");
         }
 
         private void UserProfileButton_Click(object sender, RoutedEventArgs e)
@@ -746,20 +755,41 @@ namespace MovieRecV5
             {
                 var settings = SettingsManager.LoadSettings();
 
-                if (settings.RememberMe && !string.IsNullOrEmpty(settings.LastLogin))
+                // Входим автоматически ТОЛЬКО если:
+                // 1. Включена опция "Запомнить меня"
+                // 2. Есть сохраненный логин
+                // 3. Приложение было корректно закрыто (не было выхода из аккаунта)
+                if (settings.RememberMe &&
+                    !string.IsNullOrEmpty(settings.LastLogin) &&
+                    settings.WasProperlyClosed)
                 {
                     var user = _databaseService.FindUserByLogin(settings.LastLogin);
 
                     if (user != null)
                     {
                         LoginUser(user);
-                        Console.WriteLine($"Автоматический вход выполнен для: {user.Login}");
+                        Console.WriteLine($"✅ Автоматический вход выполнен для: {user.Login}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("⚠️ Сохраненный пользователь не найден в БД");
+                        SettingsManager.ClearSettings();
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("ℹ️ Автоматический вход не выполнен (нет сохраненных данных или был выход из аккаунта)");
+
+                    // Если был выход из аккаунта - очищаем настройки
+                    if (!settings.WasProperlyClosed)
+                    {
+                        SettingsManager.ClearSettings();
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка автоматического входа: {ex.Message}");
+                Console.WriteLine($"❌ Ошибка автоматического входа: {ex.Message}");
             }
         }
 
@@ -873,7 +903,6 @@ namespace MovieRecV5
             {
                 Console.WriteLine($"❌ Ошибка при загрузке популярных фильмов: {ex.Message}");
 
-                // Показываем сообщение об ошибке
                 MoviesPanel.Children.Clear();
                 var errorText = new TextBlock
                 {
@@ -892,6 +921,17 @@ namespace MovieRecV5
                 SetProgressStatus(false);
                 SearchProgressBar.IsIndeterminate = false;
                 SearchProgressBar.Value = 0;
+            }
+        }
+
+        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (IsLogged && CurrentUser != null)
+            {
+                var settings = SettingsManager.LoadSettings();
+                settings.WasProperlyClosed = true;
+                SettingsManager.SaveSettings(settings);
+                Console.WriteLine("💾 Сохранено состояние: корректное закрытие приложения");
             }
         }
     }

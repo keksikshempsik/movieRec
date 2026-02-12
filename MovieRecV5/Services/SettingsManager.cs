@@ -17,6 +17,7 @@ namespace MovieRecV5.Services
             public string LastLogin { get; set; }
             public DateTime LastLoginTime { get; set; }
             public bool RememberMe { get; set; }
+            public bool WasProperlyClosed { get; set; } = true; 
         }
 
         public static void SaveSettings(AppSettings settings)
@@ -72,6 +73,20 @@ namespace MovieRecV5.Services
             {
                 Console.WriteLine($"Error clearing settings: {ex.Message}");
             }
+        }
+
+        public static void MarkProperShutdown()
+        {
+            var settings = LoadSettings();
+            settings.WasProperlyClosed = true;
+            SaveSettings(settings);
+        }
+
+        public static void MarkImproperShutdown()
+        {
+            var settings = LoadSettings();
+            settings.WasProperlyClosed = false;
+            SaveSettings(settings);
         }
     }
 }

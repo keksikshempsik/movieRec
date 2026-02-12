@@ -24,14 +24,12 @@ namespace MovieRecV5.ViewModels
             this.mainWindow = mainWindow;
             databaseService = new PostgresDatabaseService();
 
-            // Подписываемся на события изменения состояния RadioButton
             rbLogin.Checked += RbAuthMode_Checked;
             rbRegister.Checked += RbAuthMode_Checked;
 
-            // Устанавливаем режим входа по умолчанию
             rbLogin.IsChecked = true;
 
-            LoadSavedLogin();
+            txtLogin.Focus();
         }
 
         private void RbAuthMode_Checked(object sender, RoutedEventArgs e)
@@ -94,13 +92,15 @@ namespace MovieRecV5.ViewModels
 
                 if (user != null)
                 {
+                    // Сохраняем ТОЛЬКО настройку "Запомнить меня", НЕ сохраняем логин
                     if (chkRememberMe.IsChecked == true)
                     {
                         var settings = new SettingsManager.AppSettings
                         {
-                            LastLogin = user.Login,
+                            LastLogin = user.Login,      // все равно сохраняем для внутреннего использования
                             LastLoginTime = DateTime.Now,
-                            RememberMe = true
+                            RememberMe = true,
+                            WasProperlyClosed = true     // сбрасываем флаг
                         };
                         SettingsManager.SaveSettings(settings);
                     }
@@ -110,7 +110,6 @@ namespace MovieRecV5.ViewModels
                     }
 
                     mainWindow.LoginUser(user);
-
                     this.Close();
 
                     var profileWindow = new UserProfileWindow(user, mainWindow)
@@ -138,7 +137,7 @@ namespace MovieRecV5.ViewModels
             {
                 Console.WriteLine("=== НАЧАЛО РЕГИСТРАЦИИ ===");
 
-                // Проверка логина
+                // === ПРОВЕРКА ЛОГИНА ===
                 if (string.IsNullOrWhiteSpace(txtLogin.Text))
                 {
                     throw new Exception("Введите логин");
@@ -149,13 +148,13 @@ namespace MovieRecV5.ViewModels
                     throw new Exception("Логин должен содержать минимум 3 символа");
                 }
 
-                // После проверки логина добавьте:
-                if (databaseService.EmailExists(txtEmail.Text))
+                // Проверка на уникальность логина
+                if (databaseService.UserExistsByLogin(txtLogin.Text))
                 {
-                    throw new Exception("Пользователь с таким email уже существует");
+                    throw new Exception("Пользователь с таким логином уже существует");
                 }
 
-                // Проверка отображаемого имени (новое поле)
+                // === ПРОВЕРКА ОТОБРАЖАЕМОГО ИМЕНИ ===
                 if (string.IsNullOrWhiteSpace(txtDisplayName.Text))
                 {
                     throw new Exception("Введите отображаемое имя");
@@ -166,7 +165,7 @@ namespace MovieRecV5.ViewModels
                     throw new Exception("Отображаемое имя должно содержать минимум 2 символа");
                 }
 
-                // Проверка email
+                // === ПРОВЕРКА EMAIL ===
                 if (string.IsNullOrWhiteSpace(txtEmail.Text))
                 {
                     throw new Exception("Введите email");
@@ -177,7 +176,12 @@ namespace MovieRecV5.ViewModels
                     throw new Exception("Введите корректный email адрес");
                 }
 
-                // Проверка пароля
+                if (databaseService.EmailExists(txtEmail.Text))
+                {
+                    throw new Exception("Пользователь с таким email уже существует");
+                }
+
+                // === ПРОВЕРКА ПАРОЛЯ ===
                 if (string.IsNullOrWhiteSpace(txtPassword.Password))
                 {
                     throw new Exception("Введите пароль");
@@ -188,24 +192,11 @@ namespace MovieRecV5.ViewModels
                     throw new Exception("Пароль должен содержать минимум 6 символов");
                 }
 
-                Console.WriteLine($"Логин для проверки: '{txtLogin.Text}'");
+                Console.WriteLine("✅ Все проверки пройдены успешно");
 
-                // Проверка существования пользователя
-                if (databaseService.UserExistsByLogin(txtLogin.Text))
-                {
-                    throw new Exception("Пользователь с таким логином уже существует");
-                }
-
-                // Проверка email на уникальность
-                Console.WriteLine("Проверяем email на уникальность...");
-                var existingUserByEmail = databaseService.FindUserByLogin(txtEmail.Text); // Замените на метод проверки email, если есть
-                if (existingUserByEmail != null && existingUserByEmail.Email == txtEmail.Text)
-                {
-                    throw new Exception("Пользователь с таким email уже существует");
-                }
-
+                // === СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ ===
                 Console.WriteLine("Создаем объект пользователя...");
-                // Создаем и добавляем пользователя
+
                 var user = new User
                 {
                     Login = txtLogin.Text.Trim(),
@@ -216,32 +207,42 @@ namespace MovieRecV5.ViewModels
                 };
 
                 // Отладочная информация
-                Console.WriteLine($"Данные пользователя:");
+                Console.WriteLine($"📋 Данные пользователя:");
                 Console.WriteLine($"  Логин: {user.Login}");
                 Console.WriteLine($"  DisplayName: {user.DisplayName}");
                 Console.WriteLine($"  Email: {user.Email}");
                 Console.WriteLine($"  Password hash: {user.Password}");
                 Console.WriteLine($"  AvatarUrl: {user.AvatarUrl}");
 
+                // === ДОБАВЛЕНИЕ В БАЗУ ===
                 Console.WriteLine("Пытаемся добавить пользователя в базу...");
+
                 if (databaseService.AddUser(user))
                 {
-                    Console.WriteLine("Пользователь добавлен в базу, получаем данные...");
+                    Console.WriteLine("✅ Пользователь добавлен в базу, получаем данные...");
 
-                    // Получаем пользователя из базы
+                    // Получаем пользователя из базы (с назначенным ID)
                     var registeredUser = databaseService.GetUserByLogin(user.Login);
 
                     if (registeredUser != null)
                     {
-                        Console.WriteLine($"Успешная регистрация! ID пользователя: {registeredUser.Id}");
+                        Console.WriteLine($"✅ Успешная регистрация! ID пользователя: {registeredUser.Id}");
 
-                        // Входим в систему
+                        // Очищаем любые старые настройки авторизации
+                        SettingsManager.ClearSettings();
+
+                        // Выполняем вход в систему
                         mainWindow.LoginUser(registeredUser);
 
+                        Console.WriteLine("✅ Вход выполнен успешно");
                         Console.WriteLine("Закрываем окно регистрации...");
+
+                        // Закрываем окно регистрации
                         this.Close();
 
-                        Console.WriteLine("Открываем профиль...");
+                        Console.WriteLine("Открываем профиль пользователя...");
+
+                        // Открываем окно профиля
                         var profileWindow = new UserProfileWindow(registeredUser, mainWindow)
                         {
                             Owner = mainWindow,
@@ -249,23 +250,23 @@ namespace MovieRecV5.ViewModels
                         };
                         profileWindow.ShowDialog();
 
-                        Console.WriteLine("=== РЕГИСТРАЦИЯ УСПЕШНО ЗАВЕРШЕНА ===");
+                        Console.WriteLine("=== РЕГИСТРАЦИЯ УСПЕШНО ЗАВЕРШЕНА ===\n");
                     }
                     else
                     {
-                        Console.WriteLine("Ошибка: пользователь не найден после регистрации");
+                        Console.WriteLine("❌ Ошибка: пользователь не найден после регистрации");
                         throw new Exception("Ошибка при получении данных пользователя после регистрации");
                     }
                 }
                 else
                 {
-                    Console.WriteLine("Ошибка: AddUser вернул false");
+                    Console.WriteLine("❌ Ошибка: AddUser вернул false");
                     throw new Exception("Ошибка при регистрации пользователя (возможно, пользователь уже существует)");
                 }
             }
             catch (PostgresException pgEx)
             {
-                Console.WriteLine($"Ошибка PostgreSQL при регистрации:");
+                Console.WriteLine($"❌ Ошибка PostgreSQL при регистрации:");
                 Console.WriteLine($"  SQL State: {pgEx.SqlState}");
                 Console.WriteLine($"  Message: {pgEx.Message}");
                 Console.WriteLine($"  Detail: {pgEx.Detail}");
@@ -299,11 +300,12 @@ namespace MovieRecV5.ViewModels
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка регистрации: {ex.GetType().Name}");
-                Console.WriteLine($"Сообщение: {ex.Message}");
+                Console.WriteLine($"❌ Ошибка регистрации: {ex.GetType().Name}");
+                Console.WriteLine($"  Сообщение: {ex.Message}");
+
                 if (ex.InnerException != null)
                 {
-                    Console.WriteLine($"Внутренняя ошибка: {ex.InnerException.Message}");
+                    Console.WriteLine($"  Внутренняя ошибка: {ex.InnerException.Message}");
                 }
 
                 MessageBox.Show($"Ошибка регистрации: {ex.Message}", "Ошибка",
