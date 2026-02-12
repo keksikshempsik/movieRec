@@ -289,7 +289,7 @@ namespace MovieRecV5.Services
         {
             var movies = new List<Movie>();
             int currentPage = page;
-            int maxPages = 3; // Максимум 3 страницы (60 фильмов)
+            int maxPages = 3; 
 
             try
             {
@@ -304,7 +304,6 @@ namespace MovieRecV5.Services
 
                 Console.WriteLine($"📊 Всего страниц популярных фильмов: {totalPages}");
 
-                // Загружаем фильмы с текущей страницы
                 foreach (var movieData in results.EnumerateArray())
                 {
                     var posterPath = movieData.GetProperty("poster_path").GetString();
@@ -326,10 +325,9 @@ namespace MovieRecV5.Services
                     }
                 }
 
-                // Если нужно больше фильмов и есть еще страницы
                 if (movies.Count < maxMovies && currentPage < totalPages && currentPage < maxPages)
                 {
-                    await Task.Delay(500); // Задержка перед загрузкой следующей страницы
+                    await Task.Delay(500);
                     var nextPageMovies = await GetPopularMoviesAsync(currentPage + 1, minVotes, maxMovies - movies.Count);
                     movies.AddRange(nextPageMovies);
                 }

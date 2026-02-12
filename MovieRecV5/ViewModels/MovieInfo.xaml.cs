@@ -1,10 +1,8 @@
-﻿using Amazon.Translate;
-using MovieRecV5.Models;
+﻿using MovieRecV5.Models;
 using MovieRecV5.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -15,8 +13,6 @@ namespace MovieRecV5.ViewModels
     public partial class MovieInfo : Page
     {
         private Movie _movie;
-        private bool _isTranslated;
-        private string _originalDescription;
         private int currentRating = 0;
         private int tempRating = 0;
         private List<Button> starButtons = new List<Button>();
@@ -32,11 +28,9 @@ namespace MovieRecV5.ViewModels
             _currentUserId = userId;
             _databaseService = new PostgresDatabaseService();
             ShowMovieInfo(_movie);
-            _isTranslated = false;
-            _originalDescription = _movie.Description;
             InitializeRatingStars();
             LoadUserRating();
-            LoadWatchedStatus(); 
+            LoadWatchedStatus();
             LoadWatchListStatus();
         }
 
@@ -260,6 +254,7 @@ namespace MovieRecV5.ViewModels
                 MovieRating.Text = $"Rating: {_movie.Rating:F1}";
             }
         }
+
         private T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
         {
             for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
@@ -275,53 +270,6 @@ namespace MovieRecV5.ViewModels
                 }
             }
             return null;
-        }
-
-        private async void TranslateButton_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(MovieDescription.Text))
-                    return;
-
-                TranslateButton.IsEnabled = false;
-
-                if (_isTranslated)
-                {
-                    MovieDescription.Text = _originalDescription;
-                    TranslateButton.Content = "🌐 Перевести описание";
-                    _isTranslated = false;
-                }
-                else
-                {
-                    TranslateButton.Content = "⏳ Перевод...";
-                    var translateService = new TranslateService();
-                    string translatedText = await translateService.TranslateTextAsync(MovieDescription.Text);
-
-                    if (!string.IsNullOrEmpty(translatedText) && translatedText != MovieDescription.Text)
-                    {
-                        MovieDescription.Text = translatedText;
-                        TranslateButton.Content = "🔁 Оригинал";
-                        _isTranslated = true;
-                    }
-                    else
-                    {
-                        TranslateButton.Content = "🌐 Перевести описание";
-                        MessageBox.Show("Перевод не удался", "Информация",
-                                      MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка перевода: {ex.Message}", "Ошибка",
-                              MessageBoxButton.OK, MessageBoxImage.Error);
-                TranslateButton.Content = "🌐 Перевести описание";
-            }
-            finally
-            {
-                TranslateButton.IsEnabled = true;
-            }
         }
 
         private void RatingStars_Loaded(object sender, RoutedEventArgs e)
@@ -446,7 +394,7 @@ namespace MovieRecV5.ViewModels
             else if (_isWatched)
             {
                 WatchListButton.Content = "Хочу пересмотреть";
-                WatchListButton.Background = Brushes.LightBlue; 
+                WatchListButton.Background = Brushes.LightBlue;
                 WatchListStatusText.Text = "Добавить для повторного просмотра";
                 WatchListStatusText.Foreground = Brushes.Blue;
             }
@@ -488,7 +436,5 @@ namespace MovieRecV5.ViewModels
                               MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
-
     }
 }
