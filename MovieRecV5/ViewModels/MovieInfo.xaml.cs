@@ -45,6 +45,9 @@ namespace MovieRecV5.ViewModels
 
             // Подписываемся на изменение текста отзыва
             ReviewTextBox.TextChanged += ReviewTextBox_TextChanged;
+
+            // Убираем начальный текст
+            ReviewTextBox.Text = "";
         }
 
         public MovieInfo() : this(new Movie()) { }
@@ -76,17 +79,19 @@ namespace MovieRecV5.ViewModels
 
                 if (_currentUserReview != null)
                 {
-                    // Уже есть отзыв - показываем в режиме просмотра
+                    // Уже есть отзыв
                     ReviewTextBox.Text = _currentUserReview.ReviewText;
+                    ReviewTextBox.Foreground = Brushes.Black;
                     SaveReviewButton.Content = "Обновить отзыв";
                     DeleteReviewButton.Visibility = Visibility.Visible;
+                    SaveReviewButton.IsEnabled = true;
                     _isEditingReview = false;
                 }
                 else
                 {
-                    // Нет отзыва - показываем плейсхолдер
-                    ReviewTextBox.Text = "Напишите ваш отзыв...";
-                    ReviewTextBox.Foreground = Brushes.Gray;
+                    // Нет отзыва - пустое поле
+                    ReviewTextBox.Text = "";
+                    ReviewTextBox.Foreground = Brushes.Black;
                     SaveReviewButton.Content = "Опубликовать отзыв";
                     DeleteReviewButton.Visibility = Visibility.Collapsed;
                     SaveReviewButton.IsEnabled = false;
@@ -99,25 +104,13 @@ namespace MovieRecV5.ViewModels
 
         private void ReviewTextBox_GotFocus(object sender, RoutedEventArgs e)
         {
-            if (ReviewTextBox.Text == "Напишите ваш отзыв..." && ReviewTextBox.Foreground == Brushes.Gray)
-            {
-                ReviewTextBox.Text = "";
-                ReviewTextBox.Foreground = Brushes.Black;
-            }
+            // Ничего не делаем, так как у нас нет placeholder
         }
 
         private void ReviewTextBox_LostFocus(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(ReviewTextBox.Text))
-            {
-                ReviewTextBox.Text = "Напишите ваш отзыв...";
-                ReviewTextBox.Foreground = Brushes.Gray;
-                SaveReviewButton.IsEnabled = false;
-            }
-            else
-            {
-                SaveReviewButton.IsEnabled = true;
-            }
+            // Проверяем, нужно ли включать кнопку
+            SaveReviewButton.IsEnabled = !string.IsNullOrWhiteSpace(ReviewTextBox.Text);
         }
 
         private void ReviewTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -125,61 +118,36 @@ namespace MovieRecV5.ViewModels
             UpdateCharCount();
 
             // Включаем/выключаем кнопку сохранения
-            if (ReviewTextBox.Text.Length > 0 &&
-                ReviewTextBox.Text != "Напишите ваш отзыв..." &&
-                !string.IsNullOrWhiteSpace(ReviewTextBox.Text))
-            {
-                SaveReviewButton.IsEnabled = true;
-            }
-            else
-            {
-                SaveReviewButton.IsEnabled = false;
-            }
+            SaveReviewButton.IsEnabled = !string.IsNullOrWhiteSpace(ReviewTextBox.Text);
         }
 
         private void UpdateCharCount()
         {
             int count = ReviewTextBox.Text.Length;
-            if (ReviewTextBox.Text == "Напишите ваш отзыв..." && ReviewTextBox.Foreground == Brushes.Gray)
-            {
-                count = 0;
-            }
-
             ReviewCharCount.Text = $"{count}/1000";
 
-            if (count >= 1000)
-            {
-                ReviewCharCount.Foreground = Brushes.Red;
-            }
-            else
-            {
-                ReviewCharCount.Foreground = Brushes.Gray;
-            }
+            ReviewCharCount.Foreground = count >= 1000 ? Brushes.Red : Brushes.Gray;
         }
 
-        private async void SaveReviewButton_Click(object sender, RoutedEventArgs e)
+        private void SaveReviewButton_Click(object sender, RoutedEventArgs e)
         {
             if (_currentUserId <= 0)
             {
-                MessageBox.Show("Чтобы оставить отзыв, необходимо войти в систему",
-                              "Требуется авторизация",
-                              MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowStatusMessage("Чтобы оставить отзыв, необходимо войти в систему", true);
                 return;
             }
 
             string reviewText = ReviewTextBox.Text.Trim();
 
-            if (reviewText == "Напишите ваш отзыв..." || string.IsNullOrWhiteSpace(reviewText))
+            if (string.IsNullOrWhiteSpace(reviewText))
             {
-                MessageBox.Show("Введите текст отзыва", "Ошибка",
-                              MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowStatusMessage("Введите текст отзыва", true);
                 return;
             }
 
             if (reviewText.Length > 1000)
             {
-                MessageBox.Show("Отзыв не может быть длиннее 1000 символов", "Ошибка",
-                              MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowStatusMessage("Отзыв не может быть длиннее 1000 символов", true);
                 return;
             }
 
@@ -196,13 +164,11 @@ namespace MovieRecV5.ViewModels
                 // Перезагружаем список отзывов
                 LoadReviews();
 
-                MessageBox.Show("Отзыв успешно сохранен!", "Успех",
-                              MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowStatusMessage("✓ Отзыв сохранен", false);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка при сохранении отзыва: {ex.Message}", "Ошибка",
-                              MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowStatusMessage($"✗ Ошибка: {ex.Message}", true);
             }
         }
 
@@ -210,40 +176,30 @@ namespace MovieRecV5.ViewModels
         {
             if (_currentUserReview == null) return;
 
-            var result = MessageBox.Show("Вы уверены, что хотите удалить ваш отзыв?",
-                                        "Подтверждение удаления",
-                                        MessageBoxButton.YesNo,
-                                        MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
+            try
             {
-                try
+                bool deleted = _databaseService.DeleteReview(_currentUserReview.Id, _currentUserId);
+
+                if (deleted)
                 {
-                    bool deleted = _databaseService.DeleteReview(_currentUserReview.Id, _currentUserId);
+                    // Сбрасываем интерфейс
+                    ReviewTextBox.Text = "";
+                    ReviewTextBox.Foreground = Brushes.Black;
+                    SaveReviewButton.Content = "Опубликовать отзыв";
+                    DeleteReviewButton.Visibility = Visibility.Collapsed;
+                    CancelEditReviewButton.Visibility = Visibility.Collapsed;
+                    SaveReviewButton.IsEnabled = false;
+                    _currentUserReview = null;
 
-                    if (deleted)
-                    {
-                        // Сбрасываем интерфейс
-                        ReviewTextBox.Text = "Напишите ваш отзыв...";
-                        ReviewTextBox.Foreground = Brushes.Gray;
-                        SaveReviewButton.Content = "Опубликовать отзыв";
-                        DeleteReviewButton.Visibility = Visibility.Collapsed;
-                        CancelEditReviewButton.Visibility = Visibility.Collapsed;
-                        SaveReviewButton.IsEnabled = false;
-                        _currentUserReview = null;
+                    // Перезагружаем список отзывов
+                    LoadReviews();
 
-                        // Перезагружаем список отзывов
-                        LoadReviews();
-
-                        MessageBox.Show("Отзыв удален", "Успех",
-                                      MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
+                    ShowStatusMessage("✓ Отзыв удален", false);
                 }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Ошибка при удалении отзыва: {ex.Message}", "Ошибка",
-                                  MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+            }
+            catch (Exception ex)
+            {
+                ShowStatusMessage($"✗ Ошибка: {ex.Message}", true);
             }
         }
 
@@ -257,9 +213,9 @@ namespace MovieRecV5.ViewModels
             }
             else
             {
-                // Возвращаем плейсхолдер
-                ReviewTextBox.Text = "Напишите ваш отзыв...";
-                ReviewTextBox.Foreground = Brushes.Gray;
+                // Очищаем поле
+                ReviewTextBox.Text = "";
+                ReviewTextBox.Foreground = Brushes.Black;
             }
 
             CancelEditReviewButton.Visibility = Visibility.Collapsed;
@@ -422,6 +378,40 @@ namespace MovieRecV5.ViewModels
             }
         }
 
+        private void ShowStatusMessage(string message, bool isError)
+        {
+            var statusBar = new Border
+            {
+                Background = isError ? Brushes.LightCoral : Brushes.LightGreen,
+                Padding = new Thickness(5),
+                Margin = new Thickness(0, 5, 0, 0),
+                CornerRadius = new CornerRadius(3)
+            };
+
+            var textBlock = new TextBlock
+            {
+                Text = message,
+                Foreground = Brushes.Black,
+                FontSize = 11,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+
+            statusBar.Child = textBlock;
+
+            // Добавляем в список отзывов временно
+            ReviewsListPanel.Children.Insert(0, statusBar);
+
+            // Удаляем через 3 секунды
+            var timer = new System.Windows.Threading.DispatcherTimer();
+            timer.Interval = TimeSpan.FromSeconds(3);
+            timer.Tick += (s, e) =>
+            {
+                ReviewsListPanel.Children.Remove(statusBar);
+                timer.Stop();
+            };
+            timer.Start();
+        }
+
         private string GetInitials(string displayName)
         {
             if (string.IsNullOrEmpty(displayName)) return "??";
@@ -453,7 +443,6 @@ namespace MovieRecV5.ViewModels
         }
 
         // ===== СУЩЕСТВУЮЩИЕ МЕТОДЫ =====
-        // (все остальные методы остаются без изменений)
         private void BackButton_Click(object sender, RoutedEventArgs e)
         {
             Window.GetWindow(this)?.Close();
@@ -622,15 +611,13 @@ namespace MovieRecV5.ViewModels
         {
             if (_currentUserId <= 0)
             {
-                MessageBox.Show("Для оценки фильма необходимо войти в систему", "Ошибка",
-                              MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowStatusMessage("Для оценки фильма необходимо войти в систему", true);
                 return;
             }
 
             try
             {
                 _databaseService.SaveUserRating(_currentUserId, _movie.Slug, currentRating);
-
                 _databaseService.UpdateMovieRating(_movie.Slug, currentRating);
 
                 if (!_isWatched)
@@ -646,17 +633,16 @@ namespace MovieRecV5.ViewModels
 
                 UpdateWatchedButton();
                 UpdateWatchListButton();
-
                 RefreshMovieRating();
 
                 SubmitRatingButton.IsEnabled = false;
                 UpdateStarsAppearance();
 
+                ShowStatusMessage("✓ Оценка сохранена", false);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка сохранения оценки: {ex.Message}", "Ошибка",
-                              MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowStatusMessage($"✗ Ошибка: {ex.Message}", true);
             }
         }
 
@@ -736,8 +722,7 @@ namespace MovieRecV5.ViewModels
         {
             if (_currentUserId <= 0)
             {
-                MessageBox.Show("Для отметки фильма необходимо войти в систему", "Ошибка",
-                              MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowStatusMessage("Для отметки фильма необходимо войти в систему", true);
                 return;
             }
 
@@ -753,6 +738,8 @@ namespace MovieRecV5.ViewModels
                     UpdateStarsAppearance();
                     UpdateRatingText();
                     SubmitRatingButton.IsEnabled = true;
+
+                    ShowStatusMessage("✓ Отметка о просмотре снята", false);
                 }
                 else
                 {
@@ -760,6 +747,8 @@ namespace MovieRecV5.ViewModels
                     _isWatched = true;
 
                     _isInWatchList = false;
+
+                    ShowStatusMessage("✓ Фильм отмечен как просмотренный", false);
                 }
 
                 UpdateWatchedButton();
@@ -767,8 +756,7 @@ namespace MovieRecV5.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка",
-                              MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowStatusMessage($"✗ Ошибка: {ex.Message}", true);
             }
         }
 
@@ -828,8 +816,7 @@ namespace MovieRecV5.ViewModels
         {
             if (_currentUserId <= 0)
             {
-                MessageBox.Show("Для добавления в список 'Хочу посмотреть' необходимо войти в систему", "Ошибка",
-                              MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowStatusMessage("Для добавления в список 'Хочу посмотреть' необходимо войти в систему", true);
                 return;
             }
 
@@ -839,19 +826,20 @@ namespace MovieRecV5.ViewModels
                 {
                     _databaseService.RemoveFromWatchList(_currentUserId, _movie.Slug);
                     _isInWatchList = false;
+                    ShowStatusMessage("✓ Фильм удален из списка", false);
                 }
                 else
                 {
                     _databaseService.AddToWatchList(_currentUserId, _movie.Slug);
                     _isInWatchList = true;
+                    ShowStatusMessage("✓ Фильм добавлен в список", false);
                 }
 
                 UpdateWatchListButton();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка",
-                              MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowStatusMessage($"✗ Ошибка: {ex.Message}", true);
             }
         }
     }
