@@ -106,6 +106,17 @@ namespace MovieRecV5.Services
                     movie_slug TEXT NOT NULL,
                     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(user_id, movie_slug)
+                )",
+                
+                // ===== НОВАЯ ТАБЛИЦА ДЛЯ ОТЗЫВОВ =====
+                @"CREATE TABLE IF NOT EXISTS reviews (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    movie_slug TEXT NOT NULL,
+                    review_text TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(user_id, movie_slug)
                 )"
             };
 
@@ -1290,6 +1301,196 @@ namespace MovieRecV5.Services
             }
 
             return movies;
+        }
+
+        // ОТЗЫВЫ
+
+        public void SaveReview(int userId, string movieSlug, string reviewText)
+        {
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    var command = new NpgsqlCommand(@"
+                INSERT INTO reviews (user_id, movie_slug, review_text, updated_at)
+                VALUES (@userId, @movieSlug, @reviewText, CURRENT_TIMESTAMP)
+                ON CONFLICT (user_id, movie_slug) 
+                DO UPDATE SET 
+                    review_text = @reviewText, 
+                    updated_at = CURRENT_TIMESTAMP", connection);
+
+                    command.Parameters.AddWithValue("@userId", userId);
+                    command.Parameters.AddWithValue("@movieSlug", movieSlug);
+                    command.Parameters.AddWithValue("@reviewText", reviewText ?? "");
+
+                    command.ExecuteNonQuery();
+
+                    Console.WriteLine($"✅ Отзыв сохранен: user={userId}, movie={movieSlug}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка сохранения отзыва: {ex.Message}");
+                throw;
+            }
+        }
+
+        public Review GetUserReview(int userId, string movieSlug)
+        {
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    var command = new NpgsqlCommand(@"
+                SELECT r.*, u.login, u.display_name, u.avatar_url
+                FROM reviews r
+                JOIN users u ON r.user_id = u.id
+                WHERE r.user_id = @userId AND r.movie_slug = @movieSlug", connection);
+
+                    command.Parameters.AddWithValue("@userId", userId);
+                    command.Parameters.AddWithValue("@movieSlug", movieSlug);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            return new Review
+                            {
+                                Id = Convert.ToInt32(reader["id"]),
+                                UserId = userId,
+                                UserLogin = reader["login"]?.ToString() ?? "",
+                                UserDisplayName = reader["display_name"]?.ToString() ?? "",
+                                UserAvatarUrl = reader["avatar_url"]?.ToString() ?? "default",
+                                MovieSlug = movieSlug,
+                                ReviewText = reader["review_text"]?.ToString() ?? "",
+                                CreatedAt = Convert.ToDateTime(reader["created_at"]),
+                                UpdatedAt = Convert.ToDateTime(reader["updated_at"]),
+                                CanEdit = true
+                            };
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка получения отзыва: {ex.Message}");
+            }
+
+            return null;
+        }
+
+        public List<Review> GetMovieReviews(string movieSlug, int currentUserId = 0)
+        {
+            var reviews = new List<Review>();
+
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    var command = new NpgsqlCommand(@"
+                SELECT r.*, u.login, u.display_name, u.avatar_url, m.title as movie_title
+                FROM reviews r
+                JOIN users u ON r.user_id = u.id
+                JOIN movies m ON r.movie_slug = m.slug
+                WHERE r.movie_slug = @movieSlug
+                ORDER BY r.updated_at DESC", connection);
+
+                    command.Parameters.AddWithValue("@movieSlug", movieSlug);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var review = new Review
+                            {
+                                Id = Convert.ToInt32(reader["id"]),
+                                UserId = Convert.ToInt32(reader["user_id"]),
+                                UserLogin = reader["login"]?.ToString() ?? "",
+                                UserDisplayName = reader["display_name"]?.ToString() ?? "",
+                                UserAvatarUrl = reader["avatar_url"]?.ToString() ?? "default",
+                                MovieSlug = movieSlug,
+                                MovieTitle = reader["movie_title"]?.ToString() ?? "",
+                                ReviewText = reader["review_text"]?.ToString() ?? "",
+                                CreatedAt = Convert.ToDateTime(reader["created_at"]),
+                                UpdatedAt = Convert.ToDateTime(reader["updated_at"]),
+                                CanEdit = (currentUserId > 0 && Convert.ToInt32(reader["user_id"]) == currentUserId)
+                            };
+
+                            reviews.Add(review);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка получения отзывов: {ex.Message}");
+            }
+
+            return reviews;
+        }
+
+        public bool DeleteReview(int reviewId, int userId)
+        {
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    var command = new NpgsqlCommand(@"
+                DELETE FROM reviews 
+                WHERE id = @reviewId AND user_id = @userId", connection);
+
+                    command.Parameters.AddWithValue("@reviewId", reviewId);
+                    command.Parameters.AddWithValue("@userId", userId);
+
+                    int rowsAffected = command.ExecuteNonQuery();
+
+                    if (rowsAffected > 0)
+                    {
+                        Console.WriteLine($"✅ Отзыв {reviewId} удален");
+                        return true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка удаления отзыва: {ex.Message}");
+            }
+
+            return false;
+        }
+
+        public bool HasUserReview(int userId, string movieSlug)
+        {
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    var command = new NpgsqlCommand(@"
+                SELECT COUNT(*) FROM reviews 
+                WHERE user_id = @userId AND movie_slug = @movieSlug", connection);
+
+                    command.Parameters.AddWithValue("@userId", userId);
+                    command.Parameters.AddWithValue("@movieSlug", movieSlug);
+
+                    var count = Convert.ToInt64(command.ExecuteScalar());
+                    return count > 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка проверки отзыва: {ex.Message}");
+                return false;
+            }
         }
     }
 }

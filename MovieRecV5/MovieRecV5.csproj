@@ -137,6 +137,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Models\Review.cs" />
     <Compile Include="Services\PostgresDatabaseService.cs" />
     <Compile Include="Services\SettingsManager.cs" />
     <Compile Include="ViewModels\EditProfileWindow.xaml.cs">
