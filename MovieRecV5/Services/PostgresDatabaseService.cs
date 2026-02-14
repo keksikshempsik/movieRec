@@ -64,7 +64,7 @@ namespace MovieRecV5.Services
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )",
                 
-                // Таблица фильмов
+                // Таблица фильмов (УБРАЛИ letterboxd_url)
                 @"CREATE TABLE IF NOT EXISTS movies (
                     id SERIAL PRIMARY KEY,
                     title TEXT NOT NULL,
@@ -72,7 +72,6 @@ namespace MovieRecV5.Services
                     year INTEGER,
                     description TEXT,
                     poster_url TEXT,
-                    letterboxd_url TEXT,
                     poster TEXT,
                     genres TEXT,
                     vote_count INTEGER DEFAULT 0,
@@ -108,7 +107,7 @@ namespace MovieRecV5.Services
                     UNIQUE(user_id, movie_slug)
                 )",
                 
-                // ===== НОВАЯ ТАБЛИЦА ДЛЯ ОТЗЫВОВ =====
+                // Таблица отзывов
                 @"CREATE TABLE IF NOT EXISTS reviews (
                     id SERIAL PRIMARY KEY,
                     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -126,6 +125,20 @@ namespace MovieRecV5.Services
                         {
                             command.ExecuteNonQuery();
                         }
+                    }
+
+                    // Проверяем и удаляем старую колонку если она существует
+                    try
+                    {
+                        var alterCommand = new NpgsqlCommand(
+                            "ALTER TABLE movies DROP COLUMN IF EXISTS letterboxd_url",
+                            connection);
+                        alterCommand.ExecuteNonQuery();
+                        Console.WriteLine("✅ Колонка letterboxd_url удалена из таблицы movies");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"⚠️ Не удалось удалить колонку letterboxd_url: {ex.Message}");
                     }
 
                     AddDefaultUserIfNotExists();
@@ -150,18 +163,25 @@ namespace MovieRecV5.Services
                 connection.Open();
 
                 var command = new NpgsqlCommand(@"
-                    INSERT INTO movies (title, slug, year, description, poster_url, 
-                                      letterboxd_url, poster, genres, vote_count, rating)
-                    VALUES (@title, @slug, @year, @description, @posterUrl, 
-                           @letterboxdUrl, @poster, @genres, @voteCount, @rating)
-                    ON CONFLICT (slug) DO NOTHING", connection);
+            INSERT INTO movies (title, slug, year, description, poster_url, 
+                              poster, genres, vote_count, rating)
+            VALUES (@title, @slug, @year, @description, @posterUrl, 
+                   @poster, @genres, @voteCount, @rating)
+            ON CONFLICT (slug) DO UPDATE SET
+                title = EXCLUDED.title,
+                year = EXCLUDED.year,
+                description = EXCLUDED.description,
+                poster_url = EXCLUDED.poster_url,
+                poster = EXCLUDED.poster,
+                genres = EXCLUDED.genres,
+                vote_count = EXCLUDED.vote_count,
+                rating = EXCLUDED.rating", connection);
 
                 command.Parameters.AddWithValue("@title", movie.Title ?? "");
                 command.Parameters.AddWithValue("@slug", movie.Slug ?? "");
                 command.Parameters.AddWithValue("@year", movie.Year);
                 command.Parameters.AddWithValue("@description", movie.Description ?? "");
                 command.Parameters.AddWithValue("@posterUrl", movie.PosterUrl ?? "");
-                command.Parameters.AddWithValue("@letterboxdUrl", movie.LetterBoxdUrl ?? "");
                 command.Parameters.AddWithValue("@poster", movie.Poster ?? "");
                 command.Parameters.AddWithValue("@genres", JsonConvert.SerializeObject(movie.Genres ?? new List<string>()));
                 command.Parameters.AddWithValue("@voteCount", movie.VoteCount);
@@ -625,7 +645,6 @@ namespace MovieRecV5.Services
                 Year = reader["year"] != DBNull.Value ? Convert.ToInt32(reader["year"]) : 0,
                 Description = reader["description"]?.ToString() ?? "",
                 PosterUrl = reader["poster_url"]?.ToString() ?? "",
-                LetterBoxdUrl = reader["letterboxd_url"]?.ToString() ?? "",
                 Poster = reader["poster"]?.ToString() ?? "",
                 VoteCount = reader["vote_count"] != DBNull.Value ? Convert.ToInt32(reader["vote_count"]) : 0,
                 Rating = reader["rating"] != DBNull.Value ? Convert.ToSingle(reader["rating"]) : 0f
@@ -636,7 +655,6 @@ namespace MovieRecV5.Services
             {
                 try
                 {
-                    // Используем Newtonsoft.Json вместо JsonSerializer
                     movie.Genres = Newtonsoft.Json.JsonConvert.DeserializeObject<List<string>>(genresJson)
                         ?? new List<string>();
                 }

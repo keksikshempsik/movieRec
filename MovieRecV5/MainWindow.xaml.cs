@@ -183,7 +183,6 @@ namespace MovieRecV5
 
         private async void SearchButton_Click(object sender, RoutedEventArgs e)
         {
-            // Существующий метод поиска
             try
             {
                 SetProgressStatus(true);

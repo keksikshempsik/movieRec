@@ -8,7 +8,6 @@ public class Movie
     public int Year { get; set; }
     public string Description { get; set; }
     public string PosterUrl { get; set; }
-    public string LetterBoxdUrl { get; set; }
     public string Poster { get; set; }
     public List<string> Genres { get; set; }
     public int VoteCount { get; set; }

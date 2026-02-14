@@ -122,7 +122,7 @@ namespace MovieRecV5.Services
                 var posterPath = movieData.GetProperty("poster_path").GetString();
                 if (string.IsNullOrEmpty(posterPath) || posterPath == "null")
                 {
-                    return null; 
+                    return null;
                 }
 
                 int year = 0;
@@ -163,7 +163,6 @@ namespace MovieRecV5.Services
                     Year = year,
                     Description = CleanDescription(overview),
                     PosterUrl = posterUrl,
-                    LetterBoxdUrl = $"https://www.themoviedb.org/movie/{tmdbId}",
                     Poster = posterBase64,
                     Genres = genres,
                     VoteCount = voteCount,
@@ -268,7 +267,6 @@ namespace MovieRecV5.Services
                     Year = year,
                     Description = CleanDescription(overview),
                     PosterUrl = posterUrl,
-                    LetterBoxdUrl = $"https://www.themoviedb.org/movie/{tmdbId}",
                     Poster = posterBase64,
                     Genres = genres,
                     VoteCount = voteCount,
@@ -470,8 +468,8 @@ namespace MovieRecV5.Services
                     Slug = slug,
                     Year = year,
                     Rating = voteAverage,
-                    VoteCount = voteCount,
-                    LetterBoxdUrl = $"https://www.themoviedb.org/movie/{tmdbId}"
+                    VoteCount = voteCount
+                    // Poster и другие поля будут загружены позже
                 });
             }
 
