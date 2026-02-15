@@ -93,9 +93,10 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- Кнопки действий (просмотр и watchlist) -->
+                <!-- Кнопки действий (просмотр, watchlist и избранное) -->
                 <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
@@ -103,36 +104,54 @@
                     <!-- Кнопка отметки просмотра -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal">
                         <Button x:Name="WatchedButton"
-                                Content="Отметить как просмотренный"
-                                Click="WatchedButton_Click"
-                                Width="180"
-                                Height="25"
-                                Background="LightGreen"/>
+                Content="Отметить как просмотренный"
+                Click="WatchedButton_Click"
+                Width="180"
+                Height="25"
+                Background="LightGreen"/>
 
                         <TextBlock x:Name="WatchedStatusText"
-                                   Text=""
-                                   FontSize="12"
-                                   VerticalAlignment="Center"
-                                   Margin="10,0,0,0"
-                                   Foreground="Green"/>
+                   Text=""
+                   FontSize="12"
+                   VerticalAlignment="Center"
+                   Margin="10,0,0,0"
+                   Foreground="Green"/>
                     </StackPanel>
 
                     <!-- Кнопка добавления в WatchList -->
                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                         <Button x:Name="WatchListButton"
-                                Content="Хочу посмотреть"
-                                Click="WatchListButton_Click"
-                                Width="150"
-                                Height="25"
-                                Background="LightYellow"
-                                Margin="10,0,0,0"/>
+                Content="Хочу посмотреть"
+                Click="WatchListButton_Click"
+                Width="150"
+                Height="25"
+                Background="LightYellow"
+                Margin="10,0,0,0"/>
 
                         <TextBlock x:Name="WatchListStatusText"
-                                   Text=""
-                                   FontSize="12"
-                                   VerticalAlignment="Center"
-                                   Margin="10,0,0,0"
-                                   Foreground="Orange"/>
+                   Text=""
+                   FontSize="12"
+                   VerticalAlignment="Center"
+                   Margin="10,0,0,0"
+                   Foreground="Orange"/>
+                    </StackPanel>
+
+                    <!-- КНОПКА ИЗБРАННОГО        -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                        <Button x:Name="FavoriteButton"
+                Content="❤️ В избранное"
+                Click="FavoriteButton_Click"
+                Width="120"
+                Height="25"
+                Background="LightPink"
+                Margin="10,0,0,0"/>
+
+                        <TextBlock x:Name="FavoriteStatusText"
+                   Text=""
+                   FontSize="12"
+                   VerticalAlignment="Center"
+                   Margin="10,0,0,0"
+                   Foreground="Red"/>
                     </StackPanel>
                 </Grid>
 

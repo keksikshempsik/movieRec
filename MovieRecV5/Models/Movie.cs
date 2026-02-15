@@ -15,12 +15,14 @@ public class Movie
     public bool IsWatched { get; set; }
     public int? UserRating { get; set; }
     public bool InWatchList { get; set; }
+    public bool IsFavorite { get; set; } 
 
     public Movie()
     {
         Genres = new List<string>();
         IsWatched = false;
         InWatchList = false;
+        IsFavorite = false; 
     }
 
     public string FormatVoteCount(int count)

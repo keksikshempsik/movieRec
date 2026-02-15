@@ -100,6 +100,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Center">
@@ -120,6 +121,11 @@
                     <StackPanel Grid.Column="3" Orientation="Vertical" HorizontalAlignment="Center">
                         <TextBlock Text="Средняя оценка" FontSize="11" Foreground="Gray" HorizontalAlignment="Center"/>
                         <TextBlock x:Name="AvgRatingText" Text="0.0" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="4" Orientation="Vertical" HorizontalAlignment="Center">
+                        <TextBlock Text="Любимые" FontSize="11" Foreground="Gray" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="FavoritesCountText" Text="0.0" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Grid>
             </StackPanel>
@@ -191,28 +197,36 @@
         <!-- Действия -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,10,0,0">
             <Button Content="Редактировать профиль" 
-                    Click="EditProfileButton_Click"
-                    Width="150"
-                    Height="25"
-                    Margin="0,0,10,0"/>
+            Click="EditProfileButton_Click"
+            Width="150"
+            Height="25"
+            Margin="0,0,10,0"/>
 
             <Button Content="Хочу посмотреть" 
-                    Click="WatchListButton_Click"
-                    Width="150"
-                    Height="25"
-                    Margin="0,0,10,0"/>
+            Click="WatchListButton_Click"
+            Width="150"
+            Height="25"
+            Margin="0,0,10,0"/>
+
+            <!-- НОВАЯ КНОПКА -->
+            <Button Content="❤️ Избранное" 
+            Click="FavoritesButton_Click"
+            Width="120"
+            Height="25"
+            Background="LightPink"
+            Margin="0,0,10,0"/>
 
             <Button Content="Просмотренные фильмы" 
-                    Click="HistoryButton_Click"
-                    Width="150"
-                    Height="25"
-                    Margin="0,0,10,0"/>
+            Click="HistoryButton_Click"
+            Width="150"
+            Height="25"
+            Margin="0,0,10,0"/>
 
             <Button x:Name="LogoutButton"
-                    Content="Выйти из аккаунта" 
-                    Click="LogoutButton_Click"
-                    Width="120"
-                    Height="25"/>
+            Content="Выйти из аккаунта" 
+            Click="LogoutButton_Click"
+            Width="120"
+            Height="25"/>
         </StackPanel>
     </Grid>
 </Window>

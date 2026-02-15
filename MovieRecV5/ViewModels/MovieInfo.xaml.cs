@@ -21,6 +21,7 @@ namespace MovieRecV5.ViewModels
         private int _currentUserId;
         private bool _isWatched = false;
         private bool _isInWatchList = false;
+        private bool _isFavorite = false;
 
         // ===== НОВЫЕ ПОЛЯ ДЛЯ ОТЗЫВОВ =====
         private Review _currentUserReview;
@@ -38,16 +39,13 @@ namespace MovieRecV5.ViewModels
             LoadUserRating();
             LoadWatchedStatus();
             LoadWatchListStatus();
+            LoadFavoriteStatus(); // НОВЫЙ МЕТОД
 
-            // ===== ЗАГРУЗКА ОТЗЫВОВ =====
+            // Загрузка отзывов
             LoadReviews();
             InitializeReviewPanel();
 
-            // Подписываемся на изменение текста отзыва
             ReviewTextBox.TextChanged += ReviewTextBox_TextChanged;
-
-            // Убираем начальный текст
-            ReviewTextBox.Text = "";
         }
 
         public MovieInfo() : this(new Movie()) { }
@@ -746,13 +744,19 @@ namespace MovieRecV5.ViewModels
                     _databaseService.MarkMovieAsWatched(_currentUserId, _movie.Slug);
                     _isWatched = true;
 
-                    _isInWatchList = false;
+                    // При отметке просмотра удаляем из watch list, но НЕ из избранного
+                    if (_isInWatchList)
+                    {
+                        _databaseService.RemoveFromWatchList(_currentUserId, _movie.Slug);
+                        _isInWatchList = false;
+                    }
 
                     ShowStatusMessage("✓ Фильм отмечен как просмотренный", false);
                 }
 
                 UpdateWatchedButton();
                 UpdateWatchListButton();
+                // FavoriteButton не меняем - избранное независимо
             }
             catch (Exception ex)
             {
@@ -836,6 +840,68 @@ namespace MovieRecV5.ViewModels
                 }
 
                 UpdateWatchListButton();
+            }
+            catch (Exception ex)
+            {
+                ShowStatusMessage($"✗ Ошибка: {ex.Message}", true);
+            }
+        }
+
+        private void LoadFavoriteStatus()
+        {
+            if (_currentUserId > 0)
+            {
+                _isFavorite = _databaseService.IsInFavorites(_currentUserId, _movie.Slug);
+                UpdateFavoriteButton();
+            }
+            else
+            {
+                FavoriteButton.IsEnabled = false;
+                FavoriteButton.ToolTip = "Для добавления в избранное необходимо войти в систему";
+            }
+        }
+
+        private void UpdateFavoriteButton()
+        {
+            if (_isFavorite)
+            {
+                FavoriteButton.Content = "❤️ В избранном";
+                FavoriteButton.Background = Brushes.LightCoral;
+                FavoriteStatusText.Text = "Фильм в избранном";
+                FavoriteStatusText.Foreground = Brushes.Red;
+            }
+            else
+            {
+                FavoriteButton.Content = "❤️ В избранное";
+                FavoriteButton.Background = Brushes.LightPink;
+                FavoriteStatusText.Text = "";
+            }
+        }
+
+        private void FavoriteButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentUserId <= 0)
+            {
+                ShowStatusMessage("Для добавления в избранное необходимо войти в систему", true);
+                return;
+            }
+
+            try
+            {
+                if (_isFavorite)
+                {
+                    _databaseService.RemoveFromFavorites(_currentUserId, _movie.Slug);
+                    _isFavorite = false;
+                    ShowStatusMessage("✓ Фильм удален из избранного", false);
+                }
+                else
+                {
+                    _databaseService.AddToFavorites(_currentUserId, _movie.Slug);
+                    _isFavorite = true;
+                    ShowStatusMessage("✓ Фильм добавлен в избранное", false);
+                }
+
+                UpdateFavoriteButton();
             }
             catch (Exception ex)
             {

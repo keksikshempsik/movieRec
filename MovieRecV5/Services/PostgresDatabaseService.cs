@@ -64,7 +64,7 @@ namespace MovieRecV5.Services
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )",
                 
-                // Таблица фильмов (УБРАЛИ letterboxd_url)
+                // Таблица фильмов
                 @"CREATE TABLE IF NOT EXISTS movies (
                     id SERIAL PRIMARY KEY,
                     title TEXT NOT NULL,
@@ -116,6 +116,15 @@ namespace MovieRecV5.Services
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(user_id, movie_slug)
+                )",
+                
+                // ===== НОВАЯ ТАБЛИЦА ДЛЯ ИЗБРАННОГО =====
+                @"CREATE TABLE IF NOT EXISTS favorites (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    movie_slug TEXT NOT NULL,
+                    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(user_id, movie_slug)
                 )"
             };
 
@@ -127,18 +136,32 @@ namespace MovieRecV5.Services
                         }
                     }
 
-                    // Проверяем и удаляем старую колонку если она существует
+                    // Удаляем старую колонку если есть
                     try
                     {
                         var alterCommand = new NpgsqlCommand(
                             "ALTER TABLE movies DROP COLUMN IF EXISTS letterboxd_url",
                             connection);
                         alterCommand.ExecuteNonQuery();
-                        Console.WriteLine("✅ Колонка letterboxd_url удалена из таблицы movies");
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine($"⚠️ Не удалось удалить колонку letterboxd_url: {ex.Message}");
+                    }
+
+                    // Создаем индексы для новой таблицы
+                    try
+                    {
+                        var indexCommand = new NpgsqlCommand(@"
+                    CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id);
+                    CREATE INDEX IF NOT EXISTS idx_favorites_movie_slug ON favorites(movie_slug);",
+                            connection);
+                        indexCommand.ExecuteNonQuery();
+                        Console.WriteLine("✅ Индексы для favorites созданы");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"⚠️ Ошибка создания индексов: {ex.Message}");
                     }
 
                     AddDefaultUserIfNotExists();
@@ -672,6 +695,7 @@ namespace MovieRecV5.Services
             {
                 movie.IsWatched = IsMovieWatched(userId, movie.Slug);
                 movie.InWatchList = IsInWatchList(userId, movie.Slug);
+                movie.IsFavorite = IsInFavorites(userId, movie.Slug); // НОВАЯ СТРОКА
             }
 
             return movie;
@@ -1509,6 +1533,153 @@ namespace MovieRecV5.Services
                 Console.WriteLine($"❌ Ошибка проверки отзыва: {ex.Message}");
                 return false;
             }
+        }
+
+        // ИЗБРАННОЕ
+
+        public void AddToFavorites(int userId, string movieSlug)
+        {
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    var command = new NpgsqlCommand(@"
+                INSERT INTO favorites (user_id, movie_slug)
+                VALUES (@userId, @movieSlug)
+                ON CONFLICT (user_id, movie_slug) DO NOTHING", connection);
+
+                    command.Parameters.AddWithValue("@userId", userId);
+                    command.Parameters.AddWithValue("@movieSlug", movieSlug);
+
+                    int rowsAffected = command.ExecuteNonQuery();
+
+                    if (rowsAffected > 0)
+                        Console.WriteLine($"✅ Фильм {movieSlug} добавлен в избранное пользователя {userId}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка добавления в избранное: {ex.Message}");
+                throw;
+            }
+        }
+
+        public void RemoveFromFavorites(int userId, string movieSlug)
+        {
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    var command = new NpgsqlCommand(@"
+                DELETE FROM favorites 
+                WHERE user_id = @userId AND movie_slug = @movieSlug", connection);
+
+                    command.Parameters.AddWithValue("@userId", userId);
+                    command.Parameters.AddWithValue("@movieSlug", movieSlug);
+
+                    int rowsAffected = command.ExecuteNonQuery();
+
+                    if (rowsAffected > 0)
+                        Console.WriteLine($"✅ Фильм {movieSlug} удален из избранного пользователя {userId}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка удаления из избранного: {ex.Message}");
+                throw;
+            }
+        }
+
+        public bool IsInFavorites(int userId, string movieSlug)
+        {
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    var command = new NpgsqlCommand(@"
+                SELECT COUNT(*) FROM favorites 
+                WHERE user_id = @userId AND movie_slug = @movieSlug", connection);
+
+                    command.Parameters.AddWithValue("@userId", userId);
+                    command.Parameters.AddWithValue("@movieSlug", movieSlug);
+
+                    var count = Convert.ToInt64(command.ExecuteScalar());
+                    return count > 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка проверки избранного: {ex.Message}");
+                return false;
+            }
+        }
+
+        public int GetFavoritesCount(int userId)
+        {
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    var command = new NpgsqlCommand(@"
+                SELECT COUNT(*) FROM favorites
+                WHERE user_id = @userId", connection);
+
+                    command.Parameters.AddWithValue("@userId", userId);
+
+                    return Convert.ToInt32(command.ExecuteScalar());
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка получения количества избранного: {ex.Message}");
+                return 0;
+            }
+        }
+
+        public List<Movie> GetFavoritesMovies(int userId)
+        {
+            var movies = new List<Movie>();
+
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    var command = new NpgsqlCommand(@"
+                SELECT m.* FROM movies m
+                INNER JOIN favorites f ON m.slug = f.movie_slug
+                WHERE f.user_id = @userId
+                ORDER BY f.added_at DESC", connection);
+
+                    command.Parameters.AddWithValue("@userId", userId);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var movie = CreateMovieFromReader(reader, userId);
+                            movies.Add(movie);
+                        }
+                    }
+                }
+
+                Console.WriteLine($"📋 Загружено {movies.Count} фильмов из избранного");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка получения избранных фильмов: {ex.Message}");
+            }
+
+            return movies;
         }
     }
 }

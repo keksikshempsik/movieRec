@@ -143,6 +143,9 @@
     <Compile Include="ViewModels\EditProfileWindow.xaml.cs">
       <DependentUpon>EditProfileWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ViewModels\FavoritesWindow.xaml.cs">
+      <DependentUpon>FavoritesWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="ViewModels\Login.xaml.cs">
       <DependentUpon>Login.xaml</DependentUpon>
     </Compile>
@@ -160,6 +163,10 @@
       <DependentUpon>WatchListWindow.xaml</DependentUpon>
     </Compile>
     <Page Include="ViewModels\EditProfileWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ViewModels\FavoritesWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

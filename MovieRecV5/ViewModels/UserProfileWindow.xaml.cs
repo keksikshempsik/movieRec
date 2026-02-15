@@ -52,10 +52,12 @@ namespace MovieRecV5.ViewModels
 
             int watchedCount = _databaseService.GetWatchedMoviesCount(currentUser.Id);
             int watchListCount = _databaseService.GetWatchListCount(currentUser.Id);
+            int favoritesCount = _databaseService.GetFavoritesCount(currentUser.Id); // НОВОЕ
             int ratingsCount = _databaseService.GetUserRatingsCount(currentUser.Id);
 
             WatchedCountText.Text = watchedCount.ToString();
             WatchListCountText.Text = watchListCount.ToString();
+            FavoritesCountText.Text = favoritesCount.ToString(); // НОВОЕ (добавить в XAML)
             RatingsCountText.Text = ratingsCount.ToString();
 
             // Рассчитываем среднюю оценку
@@ -556,8 +558,12 @@ namespace MovieRecV5.ViewModels
 
         private void FavoritesButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Функция избранных фильмов в разработке",
-                "В разработке", MessageBoxButton.OK, MessageBoxImage.Information);
+            var favoritesWindow = new FavoritesWindow(currentUser)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            favoritesWindow.ShowDialog();
         }
 
         private void HistoryButton_Click(object sender, RoutedEventArgs e)
