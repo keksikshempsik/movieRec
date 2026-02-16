@@ -124,7 +124,7 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="4" Orientation="Vertical" HorizontalAlignment="Center">
-                        <TextBlock Text="Любимые" FontSize="11" Foreground="Gray" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Избранное" FontSize="11" Foreground="Gray" HorizontalAlignment="Center"/>
                         <TextBlock x:Name="FavoritesCountText" Text="0.0" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Grid>
