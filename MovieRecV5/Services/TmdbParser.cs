@@ -549,5 +549,62 @@ namespace MovieRecV5.Services
 
             return movies;
         }
+
+        public async Task<List<Movie>> SearchMoviesFastOptimized(string searchTitle, int maxResults = 30, int minVotes = 50)
+        {
+            var movies = new List<Movie>();
+
+            try
+            {
+                // Загружаем только первую страницу
+                var searchUrl = $"https://api.themoviedb.org/3/search/movie?api_key={_apiKey}&query={WebUtility.UrlEncode(searchTitle)}&language=ru-RU&page=1";
+                var response = await _httpClient.GetStringAsync(searchUrl);
+                var jsonDoc = JsonDocument.Parse(response);
+
+                var results = jsonDoc.RootElement.GetProperty("results");
+
+                foreach (var result in results.EnumerateArray().Take(maxResults))
+                {
+                    var posterPath = result.GetProperty("poster_path").GetString();
+                    if (string.IsNullOrEmpty(posterPath) || posterPath == "null")
+                        continue;
+
+                    var voteCount = result.GetProperty("vote_count").GetInt32();
+                    if (voteCount < minVotes)
+                        continue;
+
+                    var title = result.GetProperty("title").GetString();
+                    var releaseDate = result.GetProperty("release_date").GetString();
+                    var tmdbId = result.GetProperty("id").GetInt32();
+                    var voteAverage = result.GetProperty("vote_average").GetSingle();
+
+                    int year = 0;
+                    if (!string.IsNullOrEmpty(releaseDate) && releaseDate.Length >= 4)
+                    {
+                        int.TryParse(releaseDate.Substring(0, 4), out year);
+                    }
+
+                    var slug = $"tmdb-{tmdbId}-{ConvertToSlug(title)}-{year}";
+
+                    // Создаем быстрый объект без загрузки постера
+                    movies.Add(new Movie
+                    {
+                        Id = tmdbId,
+                        Title = title,
+                        Slug = slug,
+                        Year = year,
+                        Rating = voteAverage,
+                        VoteCount = voteCount,
+                        PosterUrl = $"https://image.tmdb.org/t/p/w500{posterPath}"
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка быстрого поиска в TMDB: {ex.Message}");
+            }
+
+            return movies;
+        }
     }
 }

@@ -1681,5 +1681,61 @@ namespace MovieRecV5.Services
 
             return movies;
         }
+
+        public List<Movie> SearchMoviesInDatabaseFast(string searchTerm, int userId = 0, int limit = 50)
+        {
+            var movies = new List<Movie>();
+
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    // Оптимизированный запрос
+                    string query = @"
+                SELECT * FROM movies 
+                WHERE (LOWER(title) LIKE @searchTerm 
+                   OR LOWER(slug) LIKE @slugPattern)
+                  AND poster IS NOT NULL 
+                  AND poster != 'null'
+                ORDER BY 
+                    CASE 
+                        WHEN LOWER(title) = @exactMatch THEN 1
+                        WHEN LOWER(title) LIKE @startsWith THEN 2
+                        ELSE 3
+                    END,
+                    vote_count DESC,
+                    rating DESC
+                LIMIT @limit";
+
+                    var searchTermLower = searchTerm.ToLower();
+
+                    using (var command = new NpgsqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@searchTerm", $"%{searchTermLower}%");
+                        command.Parameters.AddWithValue("@slugPattern", $"%{searchTermLower.Replace(" ", "-")}%");
+                        command.Parameters.AddWithValue("@exactMatch", searchTermLower);
+                        command.Parameters.AddWithValue("@startsWith", $"{searchTermLower}%");
+                        command.Parameters.AddWithValue("@limit", limit);
+
+                        using (var reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                var movie = CreateMovieFromReader(reader, userId);
+                                movies.Add(movie);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка быстрого поиска: {ex.Message}");
+            }
+
+            return movies;
+        }
     }
 }
