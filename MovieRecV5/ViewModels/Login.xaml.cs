@@ -39,14 +39,14 @@ namespace MovieRecV5.ViewModels
                 pnlRegister.Visibility = Visibility.Collapsed;
                 btnSubmit.Content = "Войти";
                 Title = "Вход в систему";
-                this.Height = 275;
+                this.Height = 468;
             }
             else if (rbRegister.IsChecked == true)
             {
                 pnlRegister.Visibility = Visibility.Visible;
                 btnSubmit.Content = "Зарегистрироваться";
                 Title = "Регистрация";
-                this.Height = 350; // Увеличено для нового поля
+                this.Height = 640; // Увеличено для нового поля
             }
         }
 

@@ -644,9 +644,14 @@ namespace MovieRecV5.ViewModels
         {
             MoviesPanel.Children.Clear();
 
-            foreach (var movie in movies)
+            foreach (var movie in movies.Take(30))
             {
-                var movieButton = CreateMovieButton(movie);
+                var movieButton = MovieCardHelper.CreateMovieCard(
+                    movie,
+                    _currentUser.Id,
+                    _databaseService,
+                    ShowMovieDetails
+                );
                 MoviesPanel.Children.Add(movieButton);
             }
         }

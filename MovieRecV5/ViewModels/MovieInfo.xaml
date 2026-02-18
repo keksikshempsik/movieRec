@@ -2,82 +2,157 @@
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       Title="Информация о фильме"
-      Height="700" Width="900">
+      Background="#0F0F0F"
+      Foreground="White"
+      FontFamily="Segoe UI"
+      Height="800" Width="1000">
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <Page.Resources>
+        <!-- Градиенты -->
+        <LinearGradientBrush x:Key="HeaderGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#6C5CE7" Offset="0"/>
+            <GradientStop Color="#00B894" Offset="1"/>
+        </LinearGradientBrush>
 
-        <!-- Заголовок и кнопка назад (фиксированный) -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10,10,10,5">
-            <Button x:Name="BackButton" 
-                    Content="Назад" 
+        <LinearGradientBrush x:Key="CardGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#2D2D2D" Offset="0"/>
+            <GradientStop Color="#1E1E1E" Offset="1"/>
+        </LinearGradientBrush>
+
+        <!-- Стиль для кнопок -->
+        <Style x:Key="ActionButton" TargetType="Button">
+            <Setter Property="Background" Value="#2D2D2D"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="15,8"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="20"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Стиль для звезд рейтинга -->
+        <Style x:Key="StarButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="Foreground" Value="#FFD700"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <ContentPresenter/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Стиль для текстового поля -->
+        <Style x:Key="ModernTextBox" TargetType="TextBox">
+            <Setter Property="Background" Value="#1E1E1E"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="FontSize" Value="14"/>
+        </Style>
+    </Page.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="20">
+
+            <!-- Кнопка назад -->
+            <Button x:Name="BackButton"
+                    Style="{StaticResource ActionButton}"
+                    Content="← Назад"
                     Click="BackButton_Click"
                     Width="80"
-                    Height="25"/>
+                    HorizontalAlignment="Left"
+                    Margin="0,0,0,20"/>
 
-            <TextBlock Text="Информация о фильме" 
-                       FontSize="16" 
-                       FontWeight="Bold" 
-                       VerticalAlignment="Center"
-                       Margin="10,0,0,0"/>
-        </StackPanel>
-
-        <!-- Прокручиваемая область -->
-        <ScrollViewer Grid.Row="1" 
-                      VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled"
-                      Margin="10,0,10,10">
-
-            <StackPanel>
-                <!-- Основная информация -->
-                <Grid Margin="0,0,0,10">
+            <!-- Основная карточка фильма -->
+            <Border Background="{StaticResource CardGradient}"
+                    CornerRadius="20"
+                    Padding="25"
+                    Margin="0,0,0,20">
+                <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="250"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
                     <!-- Постер -->
-                    <Image x:Name="MoviePoster" 
-                           Grid.Column="0"
-                           Width="150" 
-                           Height="200"
-                           Margin="0,0,10,0"/>
+                    <Border Grid.Column="0"
+                            CornerRadius="15"
+                            Background="#2D2D2D"
+                            Height="350">
+                        <Image x:Name="MoviePoster" 
+                               Stretch="Uniform"
+                               Margin="5"/>
+                    </Border>
 
-                    <!-- Информация справа -->
-                    <StackPanel Grid.Column="1">
+                    <!-- Информация -->
+                    <StackPanel Grid.Column="1"
+                                Margin="20,0,0,0"
+                                VerticalAlignment="Top">
+
                         <TextBlock x:Name="MovieTitle" 
-                                   FontSize="14" 
-                                   FontWeight="Bold" 
+                                   FontSize="28" 
+                                   FontWeight="Bold"
+                                   Foreground="White"
                                    TextWrapping="Wrap"
-                                   Margin="0,0,0,5"/>
+                                   Margin="0,0,0,10"/>
 
                         <TextBlock x:Name="MovieYear" 
-                                   FontSize="12" 
-                                   Margin="0,0,0,5"/>
+                                   FontSize="16"
+                                   Foreground="#B0B0B0"
+                                   Margin="0,0,0,15"/>
 
-                        <!-- РЕЙТИНГ -->
-                        <TextBlock x:Name="MovieRating"
-                                   FontSize="12"
-                                   FontWeight="SemiBold"
-                                   Foreground="#FFD700"
-                                   Margin="0,0,0,5"
-                                   Text="Рейтинг: Загрузка..."/>
+                        <!-- Рейтинг -->
+                        <Grid Margin="0,0,0,15">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                        <!-- КОЛИЧЕСТВО ПРОСМОТРОВ -->
-                        <TextBlock x:Name="MovieVoteCount"
-                                   FontSize="12"
-                                   Foreground="Gray"
-                                   Margin="0,0,0,10"
-                                   Text="Загрузка..."/>
+                            <Border Grid.Column="0"
+                                    Background="#FFD700"
+                                    CornerRadius="5"
+                                    Padding="8,3"
+                                    Margin="0,0,10,0">
+                                <TextBlock x:Name="MovieRating"
+                                           Text="7.5"
+                                           FontSize="14"
+                                           FontWeight="Bold"
+                                           Foreground="Black"/>
+                            </Border>
 
+                            <TextBlock Grid.Column="1"
+                                       x:Name="MovieVoteCount"
+                                       Text="150K votes"
+                                       FontSize="14"
+                                       Foreground="#B0B0B0"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <!-- Жанры -->
                         <TextBlock Text="Жанры:" 
-                                   FontWeight="Bold" 
+                                   FontWeight="SemiBold"
+                                   Foreground="#B0B0B0"
                                    Margin="0,0,0,5"/>
-
-                        <ItemsControl x:Name="GenresList">
+                        <ItemsControl x:Name="GenresList"
+                                      Margin="0,0,0,15">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <WrapPanel Orientation="Horizontal"/>
@@ -85,84 +160,71 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding}" 
-                                               Margin="0,0,5,0"/>
+                                    <Border Background="#2D2D2D"
+                                            CornerRadius="15"
+                                            Padding="12,5"
+                                            Margin="0,0,8,5">
+                                        <TextBlock Text="{Binding}" 
+                                                   Foreground="White"
+                                                   FontSize="12"/>
+                                    </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                    </StackPanel>
-                </Grid>
 
-                <!-- Кнопки действий (просмотр, watchlist и избранное) -->
-                <Grid Margin="0,0,0,10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+                        <!-- Кнопки действий -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                            <Button x:Name="WatchedButton"
+                                    Style="{StaticResource ActionButton}"
+                                    Content="✓ Просмотрено"
+                                    Click="WatchedButton_Click"
+                                    Background="#00B894"
+                                    Margin="0,0,10,0"/>
 
-                    <!-- Кнопка отметки просмотра -->
-                    <StackPanel Grid.Column="0" Orientation="Horizontal">
-                        <Button x:Name="WatchedButton"
-                Content="Отметить как просмотренный"
-                Click="WatchedButton_Click"
-                Width="180"
-                Height="25"
-                Background="LightGreen"/>
+                            <Button x:Name="WatchListButton"
+                                    Style="{StaticResource ActionButton}"
+                                    Content="📋 Хочу посмотреть"
+                                    Click="WatchListButton_Click"
+                                    Background="#FDCB6E"
+                                    Margin="0,0,10,0"/>
+
+                            <Button x:Name="FavoriteButton"
+                                    Style="{StaticResource ActionButton}"
+                                    Content="❤️ В избранное"
+                                    Click="FavoriteButton_Click"
+                                    Background="#E17055"/>
+                        </StackPanel>
 
                         <TextBlock x:Name="WatchedStatusText"
-                   Text=""
-                   FontSize="12"
-                   VerticalAlignment="Center"
-                   Margin="10,0,0,0"
-                   Foreground="Green"/>
-                    </StackPanel>
-
-                    <!-- Кнопка добавления в WatchList -->
-                    <StackPanel Grid.Column="1" Orientation="Horizontal">
-                        <Button x:Name="WatchListButton"
-                Content="Хочу посмотреть"
-                Click="WatchListButton_Click"
-                Width="150"
-                Height="25"
-                Background="LightYellow"
-                Margin="10,0,0,0"/>
-
+                                   Text=""
+                                   FontSize="12"
+                                   Foreground="#00B894"
+                                   Margin="0,0,0,5"/>
                         <TextBlock x:Name="WatchListStatusText"
-                   Text=""
-                   FontSize="12"
-                   VerticalAlignment="Center"
-                   Margin="10,0,0,0"
-                   Foreground="Orange"/>
-                    </StackPanel>
-
-                    <!-- КНОПКА ИЗБРАННОГО        -->
-                    <StackPanel Grid.Column="2" Orientation="Horizontal">
-                        <Button x:Name="FavoriteButton"
-                Content="❤️ В избранное"
-                Click="FavoriteButton_Click"
-                Width="120"
-                Height="25"
-                Background="LightPink"
-                Margin="10,0,0,0"/>
-
+                                   Text=""
+                                   FontSize="12"
+                                   Foreground="#FDCB6E"
+                                   Margin="0,0,0,5"/>
                         <TextBlock x:Name="FavoriteStatusText"
-                   Text=""
-                   FontSize="12"
-                   VerticalAlignment="Center"
-                   Margin="10,0,0,0"
-                   Foreground="Red"/>
+                                   Text=""
+                                   FontSize="12"
+                                   Foreground="#E17055"/>
                     </StackPanel>
                 </Grid>
+            </Border>
 
-                <!-- Система оценки -->
-                <StackPanel Margin="0,0,0,15">
+            <!-- Система оценки -->
+            <Border Background="{StaticResource CardGradient}"
+                    CornerRadius="20"
+                    Padding="20"
+                    Margin="0,0,0,20">
+                <StackPanel>
                     <TextBlock Text="Ваша оценка:" 
-                               FontWeight="Bold" 
-                               Margin="0,0,0,5"/>
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,10"/>
 
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <!-- Звезды для оценки -->
                         <ItemsControl x:Name="RatingStars" Loaded="RatingStars_Loaded">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -172,80 +234,83 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Button Content="★"
-                                            FontSize="20"
-                                            Foreground="LightGray"
-                                            Background="Transparent"
-                                            BorderThickness="0"
-                                            Margin="2,0"
-                                            Cursor="Hand"
+                                            Style="{StaticResource StarButton}"
                                             Tag="{Binding}"
                                             Click="StarButton_Click"
                                             MouseEnter="StarButton_MouseEnter"
-                                            MouseLeave="StarButton_MouseLeave"
-                                            Loaded="StarButton_Loaded"/>
+                                            MouseLeave="StarButton_MouseLeave"/>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
                         <TextBlock x:Name="SelectedRatingText"
                                    Text="0/10"
-                                   FontSize="12"
-                                   VerticalAlignment="Center"
-                                   Margin="10,0,0,0"
-                                   Foreground="Gray"/>
+                                   FontSize="14"
+                                   Foreground="#B0B0B0"
+                                   Margin="15,0,0,0"/>
                     </StackPanel>
 
                     <Button x:Name="SubmitRatingButton"
+                            Style="{StaticResource ActionButton}"
                             Content="Подтвердить оценку"
                             Click="SubmitRatingButton_Click"
-                            Width="120"
-                            Height="25"
-                            Margin="0,5,0,0"
+                            Background="#6C5CE7"
+                            Width="150"
+                            Margin="0,15,0,0"
                             IsEnabled="False"/>
                 </StackPanel>
+            </Border>
 
-                <!-- Описание -->
-                <StackPanel Margin="0,0,0,15">
+            <!-- Описание -->
+            <Border Background="{StaticResource CardGradient}"
+                    CornerRadius="20"
+                    Padding="20"
+                    Margin="0,0,0,20">
+                <StackPanel>
                     <TextBlock Text="Описание:" 
-                               FontWeight="Bold" 
-                               Margin="0,0,0,5"/>
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,10"/>
 
                     <TextBox x:Name="MovieDescription" 
                              TextWrapping="Wrap" 
-                             FontSize="12"
-                             Height="120"
+                             FontSize="14"
+                             Background="#2D2D2D"
+                             Foreground="#B0B0B0"
+                             BorderThickness="0"
+                             Padding="15"
                              IsReadOnly="True"
-                             VerticalScrollBarVisibility="Auto"/>
+                             Text="Загрузка описания..."
+                             VerticalScrollBarVisibility="Auto"
+                             MinHeight="120"/>
                 </StackPanel>
+            </Border>
 
-                <!-- ===== СЕКЦИЯ: ОТЗЫВЫ ===== -->
+            <!-- Отзывы -->
+            <Border Background="{StaticResource CardGradient}"
+                    CornerRadius="20"
+                    Padding="20"
+                    Margin="0,0,0,20">
                 <StackPanel>
-                    <!-- Заголовок секции отзывов -->
-                    <Border Background="#F0F0F0" 
-                            BorderBrush="#D0D0D0"
-                            BorderThickness="1"
-                            Margin="0,5,0,5">
-                        <TextBlock Text="📝 Отзывы пользователей" 
-                                   FontWeight="Bold" 
-                                   FontSize="14"
-                                   Margin="5"/>
-                    </Border>
+                    <TextBlock Text="📝 Отзывы" 
+                               FontSize="20"
+                               FontWeight="Bold"
+                               Foreground="#6C5CE7"
+                               Margin="0,0,0,15"/>
 
-                    <!-- Панель для написания отзыва (только для авторизованных) -->
-                    <Border x:Name="ReviewEditPanel" 
-                            Background="#F9F9F9"
-                            BorderBrush="LightGray"
-                            BorderThickness="1"
-                            Margin="0,5,0,10">
-                        <StackPanel Margin="5">
-                            <!-- Приглашение для неавторизованных -->
+                    <!-- Панель для написания отзыва -->
+                    <Border Background="#2D2D2D"
+                            CornerRadius="15"
+                            Padding="15"
+                            Margin="0,0,0,15">
+
+                        <StackPanel>
                             <TextBlock x:Name="ReviewLoginPrompt" 
                                        Text="Войдите в систему, чтобы оставить отзыв"
-                                       Foreground="Gray"
+                                       Foreground="#B0B0B0"
                                        Visibility="Collapsed"
-                                       Margin="5"/>
+                                       HorizontalAlignment="Center"/>
 
-                            <!-- Поле ввода отзыва -->
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -254,51 +319,45 @@
 
                                 <TextBox x:Name="ReviewTextBox"
                                          Grid.Row="0"
+                                         Style="{StaticResource ModernTextBox}"
                                          TextWrapping="Wrap"
                                          AcceptsReturn="True"
-                                         Height="80"
+                                         Height="100"
                                          MaxLength="1000"
-                                         VerticalScrollBarVisibility="Auto"
-                                         Margin="0,0,0,5"/>
+                                         Margin="0,0,0,10"/>
 
-                                <!-- Кнопки управления отзывом -->
                                 <StackPanel Grid.Row="1" 
                                             Orientation="Horizontal" 
-                                            HorizontalAlignment="Right"
-                                            Margin="0,5,0,0">
+                                            HorizontalAlignment="Right">
 
                                     <TextBlock x:Name="ReviewCharCount"
                                                Text="0/1000"
-                                               FontSize="10"
-                                               Foreground="Gray"
+                                               FontSize="11"
+                                               Foreground="#B0B0B0"
                                                VerticalAlignment="Center"
-                                               Margin="0,0,10,0"/>
+                                               Margin="0,0,15,0"/>
 
                                     <Button x:Name="DeleteReviewButton"
-                                            Content="Удалить"
+                                            Style="{StaticResource ActionButton}"
+                                            Content="🗑️ Удалить"
                                             Click="DeleteReviewButton_Click"
-                                            Width="80"
-                                            Height="25"
-                                            Background="LightCoral"
-                                            Foreground="White"
-                                            Margin="0,0,5,0"
+                                            Background="#D63031"
+                                            Margin="0,0,10,0"
                                             Visibility="Collapsed"/>
 
                                     <Button x:Name="CancelEditReviewButton"
-                                            Content="Отмена"
+                                            Style="{StaticResource ActionButton}"
+                                            Content="✖️ Отмена"
                                             Click="CancelEditReviewButton_Click"
-                                            Width="80"
-                                            Height="25"
-                                            Margin="0,0,5,0"
+                                            Background="#636E72"
+                                            Margin="0,0,10,0"
                                             Visibility="Collapsed"/>
 
                                     <Button x:Name="SaveReviewButton"
-                                            Content="Опубликовать отзыв"
+                                            Style="{StaticResource ActionButton}"
+                                            Content="📨 Опубликовать"
                                             Click="SaveReviewButton_Click"
-                                            Width="120"
-                                            Height="25"
-                                            Background="#4CAF50"
-                                            Foreground="White"
+                                            Background="#6C5CE7"
                                             IsEnabled="False"/>
                                 </StackPanel>
                             </Grid>
@@ -306,17 +365,18 @@
                     </Border>
 
                     <!-- Список отзывов -->
-                    <StackPanel x:Name="ReviewsListPanel" Margin="0,0,0,5"/>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="400">
+                        <StackPanel x:Name="ReviewsListPanel"/>
+                    </ScrollViewer>
 
-                    <!-- Сообщение, если нет отзывов -->
                     <TextBlock x:Name="NoReviewsText"
                                Text="Пока нет отзывов. Будьте первым!"
-                               Foreground="Gray"
+                               Foreground="#B0B0B0"
                                HorizontalAlignment="Center"
-                               Margin="0,10"
+                               Margin="20"
                                Visibility="Collapsed"/>
                 </StackPanel>
-            </StackPanel>
-        </ScrollViewer>
-    </Grid>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
 </Page>

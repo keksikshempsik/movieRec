@@ -11,6 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 
 namespace MovieRecV5
@@ -363,7 +364,7 @@ namespace MovieRecV5
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center,
                     FontSize = 16,
-                    Foreground = Brushes.Gray,
+                    Foreground = new SolidColorBrush(Color.FromRgb(176, 176, 176)),
                     Margin = new Thickness(20)
                 };
                 MoviesPanel.Children.Add(noResultsText);
@@ -372,7 +373,12 @@ namespace MovieRecV5
 
             foreach (var movie in movies)
             {
-                var movieButton = CreateMovieButton(movie);
+                var movieButton = MovieCardHelper.CreateMovieCard(
+                    movie,
+                    CurrentUser?.Id ?? 0,
+                    _databaseService,
+                    ShowMovieDetails
+                );
                 MoviesPanel.Children.Add(movieButton);
             }
         }
@@ -401,147 +407,123 @@ namespace MovieRecV5
 
             var button = new Button
             {
+                Style = (Style)FindResource("MovieCardStyle"),
+                Width = 180,
+                Height = 320,
                 Margin = new Thickness(10),
-                Padding = new Thickness(0),
-                Background = backgroundColor,
-                BorderBrush = Brushes.DodgerBlue,
-                BorderThickness = new Thickness(2),
-                Cursor = Cursors.Hand,
+                ToolTip = $"{movie.Title}\n★ {movie.Rating:F1}/10 • {movie.FormatVoteCount(movie.VoteCount)} оценок"
+            };
+
+            var border = new Border
+            {
+                Background = new SolidColorBrush(Color.FromRgb(30, 30, 30)),
+                CornerRadius = new CornerRadius(15),
+                Padding = new Thickness(10)
+            };
+
+            var stackPanel = new StackPanel();
+
+            // Постер с эффектом тени
+            var posterBorder = new Border
+            {
                 Width = 160,
-                Height = 300,
-                ToolTip = $"{movie.Title}\nРейтинг: {movie.Rating:F1}/10\nОценок: {movie.FormatVoteCount(movie.VoteCount)}\nГод: {movie.Year}"
+                Height = 220,
+                CornerRadius = new CornerRadius(10),
+                Background = new SolidColorBrush(Color.FromRgb(45, 45, 45)),
+                Margin = new Thickness(0, 0, 0, 10)
             };
 
-            var stackPanel = new StackPanel
+            var posterImage = CreatePosterImage(movie);
+            posterImage.Width = 160;
+            posterImage.Height = 220;
+            posterBorder.Child = posterImage;
+
+            posterBorder.Effect = new DropShadowEffect
             {
-                Orientation = Orientation.Vertical,
-                HorizontalAlignment = HorizontalAlignment.Center
+                Color = Colors.Black,
+                BlurRadius = 10,
+                Opacity = 0.3
             };
 
-            // Постер
-            var posterContainer = new Border
+            stackPanel.Children.Add(posterBorder);
+
+            // Иконки статусов
+            var statusPanel = new WrapPanel
             {
-                Width = 140,
-                Height = 200,
-                Background = Brushes.White,
                 HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Top,
-                Child = CreatePosterImage(movie)
-            };
-            stackPanel.Children.Add(posterContainer);
-
-            // Статус иконки
-            var statusPanel = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 2, 0, 0)
+                Margin = new Thickness(0, 0, 0, 5)
             };
 
             if (isWatched)
-            {
-                statusPanel.Children.Add(new TextBlock
-                {
-                    Text = "✓",
-                    Foreground = Brushes.Green,
-                    FontWeight = FontWeights.Bold,
-                    Margin = new Thickness(0, 0, 3, 0)
-                });
-            }
+                statusPanel.Children.Add(CreateStatusBadge("✓", "#00B894"));
             if (isInWatchList)
-            {
-                statusPanel.Children.Add(new TextBlock
-                {
-                    Text = "📋",
-                    Foreground = Brushes.Orange,
-                    Margin = new Thickness(0, 0, 3, 0)
-                });
-            }
+                statusPanel.Children.Add(CreateStatusBadge("📋", "#FDCB6E"));
             if (isFavorite)
-            {
-                statusPanel.Children.Add(new TextBlock
-                {
-                    Text = "❤️",
-                    Foreground = Brushes.Red,
-                    Margin = new Thickness(0, 0, 3, 0)
-                });
-            }
+                statusPanel.Children.Add(CreateStatusBadge("❤️", "#E17055"));
 
             stackPanel.Children.Add(statusPanel);
 
-            // Информация
-            var textContainer = new StackPanel
+            // Название
+            stackPanel.Children.Add(new TextBlock
             {
-                Margin = new Thickness(5, 5, 5, 5),
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Width = 140
-            };
-
-            var titleText = new TextBlock
-            {
-                Text = $"{movie.Title} ({movie.Year})",
+                Text = movie.Title,
+                FontWeight = FontWeights.SemiBold,
+                FontSize = 14,
+                Foreground = Brushes.White,
                 TextWrapping = TextWrapping.Wrap,
                 TextAlignment = TextAlignment.Center,
-                FontWeight = FontWeights.SemiBold,
-                FontSize = 12,
-                Foreground = Brushes.Black,
-                MaxHeight = 35
-            };
-            textContainer.Children.Add(titleText);
-
-            var ratingStack = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 3, 0, 0)
-            };
-
-            ratingStack.Children.Add(new TextBlock
-            {
-                Text = "★",
-                FontSize = 11,
-                Foreground = Brushes.Gold,
-                FontWeight = FontWeights.Bold,
-                Margin = new Thickness(0, 0, 2, 0)
+                MaxHeight = 40,
+                Margin = new Thickness(0, 5, 0, 3)
             });
 
-            ratingStack.Children.Add(new TextBlock
+            // Рейтинг
+            var ratingPanel = new StackPanel
             {
-                Text = $"{movie.Rating:F1}",
-                FontSize = 11,
-                Foreground = Brushes.Gold,
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+
+            ratingPanel.Children.Add(new TextBlock
+            {
+                Text = "★",
+                Foreground = new SolidColorBrush(Color.FromRgb(255, 215, 0)),
+                FontSize = 14,
+                Margin = new Thickness(0, 0, 3, 0)
+            });
+
+            ratingPanel.Children.Add(new TextBlock
+            {
+                Text = $"{movie.Rating:F1}/10",
+                Foreground = new SolidColorBrush(Color.FromRgb(255, 215, 0)),
+                FontSize = 12,
                 FontWeight = FontWeights.Bold
             });
 
-            ratingStack.Children.Add(new TextBlock
-            {
-                Text = $" ({movie.FormatVoteCount(movie.VoteCount)})",
-                FontSize = 10,
-                Foreground = Brushes.Gray
-            });
+            stackPanel.Children.Add(ratingPanel);
 
-            textContainer.Children.Add(ratingStack);
-
-            if (movie.Genres != null && movie.Genres.Any())
-            {
-                var genresText = new TextBlock
-                {
-                    Text = string.Join(", ", movie.Genres.Take(2)),
-                    TextWrapping = TextWrapping.Wrap,
-                    TextAlignment = TextAlignment.Center,
-                    FontSize = 10,
-                    Foreground = Brushes.Gray,
-                    Margin = new Thickness(0, 3, 0, 0),
-                    MaxHeight = 30
-                };
-                textContainer.Children.Add(genresText);
-            }
-
-            stackPanel.Children.Add(textContainer);
-            button.Content = stackPanel;
+            border.Child = stackPanel;
+            button.Content = border;
             button.Click += (s, e) => ShowMovieDetails(movie);
 
             return button;
+        }
+
+        private Border CreateStatusBadge(string icon, string color)
+        {
+            return new Border
+            {
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(color)),
+                CornerRadius = new CornerRadius(12),
+                Padding = new Thickness(8, 3, 8, 3),
+                Margin = new Thickness(2),
+                Child = new TextBlock
+                {
+                    Text = icon,
+                    FontSize = 11,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = Brushes.White
+                }
+            };
         }
 
         private Image CreatePosterImage(Movie movie)
@@ -867,6 +849,13 @@ namespace MovieRecV5
                 SettingsManager.SaveSettings(settings);
                 Console.WriteLine("💾 Сохранено состояние: корректное закрытие приложения");
             }
+        }
+
+        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            // Этот метод нужен для обновления плейсхолдера через триггеры
+            // Тело метода может быть пустым, но метод должен существовать
+            // чтобы TextChanged событие работало
         }
     }
 }

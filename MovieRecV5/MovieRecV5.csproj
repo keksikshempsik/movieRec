@@ -150,6 +150,7 @@
       <DependentUpon>Login.xaml</DependentUpon>
     </Compile>
     <Compile Include="Models\User.cs" />
+    <Compile Include="ViewModels\MovieCardHelper.cs" />
     <Compile Include="ViewModels\RecommendationsWindow.xaml.cs">
       <DependentUpon>RecommendationsWindow.xaml</DependentUpon>
     </Compile>

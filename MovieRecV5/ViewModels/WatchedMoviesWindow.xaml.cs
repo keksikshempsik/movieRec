@@ -49,7 +49,12 @@ namespace MovieRecV5.ViewModels
 
             foreach (var movie in movies)
             {
-                var movieButton = CreateMovieButton(movie);
+                var movieButton = MovieCardHelper.CreateMovieCard(
+                    movie,
+                    _currentUser.Id,
+                    _databaseService,
+                    ShowMovieDetails
+                );
                 MoviesPanel.Children.Add(movieButton);
             }
         }

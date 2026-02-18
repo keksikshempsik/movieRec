@@ -1,9 +1,288 @@
 ﻿<Application x:Class="MovieRecV5.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:MovieRecV5"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <!-- Цвета -->
+        <SolidColorBrush x:Key="PrimaryColor" Color="#6C5CE7"/>
+        <SolidColorBrush x:Key="PrimaryDarkColor" Color="#5849C4"/>
+        <SolidColorBrush x:Key="AccentColor" Color="#00B894"/>
+        <SolidColorBrush x:Key="BackgroundColor" Color="#0F0F0F"/>
+        <SolidColorBrush x:Key="SurfaceColor" Color="#1E1E1E"/>
+        <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="#B0B0B0"/>
+        <SolidColorBrush x:Key="BorderColor" Color="#2D2D2D"/>
+
+        <!-- Глобальные градиенты -->
+        <LinearGradientBrush x:Key="HeaderGradient" StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="#6C5CE7" Offset="0"/>
+            <GradientStop Color="#00B894" Offset="1"/>
+        </LinearGradientBrush>
+
+        <LinearGradientBrush x:Key="PurpleGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#6C5CE7" Offset="0"/>
+            <GradientStop Color="#A366E7" Offset="1"/>
+        </LinearGradientBrush>
+
+        <!-- Стиль для TextBox -->
+        <Style x:Key="ModernTextBox" TargetType="TextBox">
+            <Setter Property="Background" Value="#2D2D2D"/>
+            <Setter Property="Foreground" Value="White"/>
+            <!-- Явно задаем белый цвет -->
+            <Setter Property="BorderBrush" Value="#404040"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="CaretBrush" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="8">
+                            <ScrollViewer x:Name="PART_ContentHost" 
+                                  Margin="5,0"
+                                  Background="Transparent"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="BorderBrush" Value="#6C5CE7"/>
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="#6C5CE7"/>
+                                <Setter Property="BorderThickness" Value="2"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Стиль для PasswordBox -->
+        <Style x:Key="ModernPasswordBox" TargetType="PasswordBox">
+            <Setter Property="Background" Value="#2D2D2D"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#404040"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="PasswordBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <ScrollViewer x:Name="PART_ContentHost" 
+                                          Margin="5,0"
+                                          Background="Transparent"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="BorderBrush" Value="#6C5CE7"/>
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="#6C5CE7"/>
+                                <Setter Property="BorderThickness" Value="2"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Стиль для RadioButton -->
+        <Style x:Key="ModernRadioButton" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Grid Background="Transparent">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0"
+                                    Width="18"
+                                    Height="18"
+                                    CornerRadius="9"
+                                    BorderBrush="#6C5CE7"
+                                    BorderThickness="2"
+                                    Background="Transparent"
+                                    Margin="0,0,8,0">
+                                <Border x:Name="CheckMark"
+                                        Width="10"
+                                        Height="10"
+                                        CornerRadius="5"
+                                        Background="#6C5CE7"
+                                        Visibility="Collapsed"/>
+                            </Border>
+                            <ContentPresenter Grid.Column="1"
+                                            VerticalAlignment="Center"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Стиль для CheckBox -->
+        <Style x:Key="ModernCheckBox" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid Background="Transparent">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0"
+                                    Width="18"
+                                    Height="18"
+                                    CornerRadius="4"
+                                    BorderBrush="#6C5CE7"
+                                    BorderThickness="2"
+                                    Background="Transparent"
+                                    Margin="0,0,8,0">
+                                <TextBlock x:Name="CheckMark"
+                                           Text="✓"
+                                           Foreground="#6C5CE7"
+                                           FontSize="14"
+                                           FontWeight="Bold"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Visibility="Collapsed"/>
+                            </Border>
+                            <ContentPresenter Grid.Column="1"
+                                            VerticalAlignment="Center"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Базовый стиль для кнопки действия -->
+        <Style x:Key="ActionButton" TargetType="Button">
+            <Setter Property="Background" Value="#6C5CE7"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Height" Value="35"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="8"
+                                Padding="10,5">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#7C6CE7"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Opacity" Value="0.8"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Стиль для иконок-кнопок (например, кнопка поиска) -->
+        <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource ActionButton}">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="Width" Value="45"/>
+            <Setter Property="Height" Value="45"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="0,25,25,0">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#7C6CE7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Стиль для ModernButton (алиас) -->
+        <Style x:Key="ModernButton" TargetType="Button" BasedOn="{StaticResource ActionButton}"/>
+
+        <!-- Стиль для карточки фильма -->
+        <Style x:Key="MovieCardStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Width" Value="180"/>
+            <Setter Property="Height" Value="320"/>
+            <Setter Property="Margin" Value="10"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="15">
+                            <ContentPresenter/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Стиль для бейджа статуса -->
+        <Style x:Key="StatusBadgeStyle" TargetType="Border">
+            <Setter Property="Background" Value="#2D2D2D"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="Margin" Value="2"/>
+        </Style>
+
+        <!-- Стиль для ProgressBar -->
+        <Style x:Key="ProgressBarStyle" TargetType="ProgressBar">
+            <Setter Property="Background" Value="#2D2D2D"/>
+            <Setter Property="Foreground" Value="#6C5CE7"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Height" Value="6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="3">
+                            <Grid>
+                                <Border x:Name="PART_Track"/>
+                                <Border x:Name="PART_Indicator"
+                                        Background="{TemplateBinding Foreground}"
+                                        CornerRadius="3"
+                                        HorizontalAlignment="Left"/>
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Application.Resources>
 </Application>
