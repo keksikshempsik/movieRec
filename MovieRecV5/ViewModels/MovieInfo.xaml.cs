@@ -79,7 +79,7 @@ namespace MovieRecV5.ViewModels
                 {
                     // Уже есть отзыв
                     ReviewTextBox.Text = _currentUserReview.ReviewText;
-                    ReviewTextBox.Foreground = Brushes.Black;
+                    ReviewTextBox.Foreground = Brushes.White;
                     SaveReviewButton.Content = "Обновить отзыв";
                     DeleteReviewButton.Visibility = Visibility.Visible;
                     SaveReviewButton.IsEnabled = true;
@@ -89,7 +89,7 @@ namespace MovieRecV5.ViewModels
                 {
                     // Нет отзыва - пустое поле
                     ReviewTextBox.Text = "";
-                    ReviewTextBox.Foreground = Brushes.Black;
+                    ReviewTextBox.Foreground = Brushes.White;
                     SaveReviewButton.Content = "Опубликовать отзыв";
                     DeleteReviewButton.Visibility = Visibility.Collapsed;
                     SaveReviewButton.IsEnabled = false;
@@ -182,7 +182,7 @@ namespace MovieRecV5.ViewModels
                 {
                     // Сбрасываем интерфейс
                     ReviewTextBox.Text = "";
-                    ReviewTextBox.Foreground = Brushes.Black;
+                    ReviewTextBox.Foreground = Brushes.White;
                     SaveReviewButton.Content = "Опубликовать отзыв";
                     DeleteReviewButton.Visibility = Visibility.Collapsed;
                     CancelEditReviewButton.Visibility = Visibility.Collapsed;
@@ -207,13 +207,13 @@ namespace MovieRecV5.ViewModels
             {
                 // Возвращаем исходный текст
                 ReviewTextBox.Text = _currentUserReview.ReviewText;
-                ReviewTextBox.Foreground = Brushes.Black;
+                ReviewTextBox.Foreground = Brushes.White;
             }
             else
             {
                 // Очищаем поле
                 ReviewTextBox.Text = "";
-                ReviewTextBox.Foreground = Brushes.Black;
+                ReviewTextBox.Foreground = Brushes.White;
             }
 
             CancelEditReviewButton.Visibility = Visibility.Collapsed;
@@ -244,114 +244,146 @@ namespace MovieRecV5.ViewModels
         {
             var border = new Border
             {
-                Background = Brushes.White,
-                BorderBrush = Brushes.LightGray,
+                Background = new SolidColorBrush(Color.FromRgb(30, 30, 30)),
+                BorderBrush = new SolidColorBrush(Color.FromRgb(64, 64, 64)),
                 BorderThickness = new Thickness(1),
-                Margin = new Thickness(0, 0, 0, 10),
-                Padding = new Thickness(10),
-                CornerRadius = new CornerRadius(5)
+                Margin = new Thickness(0, 0, 0, 12),
+                Padding = new Thickness(15),
+                CornerRadius = new CornerRadius(10)
             };
 
-            var grid = new Grid();
-            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var stackPanel = new StackPanel();
 
-            // Шапка с информацией о пользователе
-            var headerStack = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 5) };
+            // Шапка
+            var headerPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8) };
 
-            // Аватар (инициалы)
+            // Аватар
             var avatarBorder = new Border
             {
-                Width = 25,
-                Height = 25,
-                Background = Brushes.LightGray,
-                CornerRadius = new CornerRadius(12.5),
-                Margin = new Thickness(0, 0, 5, 0)
+                Width = 32,
+                Height = 32,
+                Background = new SolidColorBrush(Color.FromRgb(108, 92, 231)),
+                CornerRadius = new CornerRadius(16),
+                Margin = new Thickness(0, 0, 10, 0)
             };
 
             var avatarText = new TextBlock
             {
                 Text = GetInitials(review.UserDisplayName),
-                FontSize = 10,
+                FontSize = 12,
                 FontWeight = FontWeights.Bold,
                 Foreground = Brushes.White,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
             };
             avatarBorder.Child = avatarText;
-            headerStack.Children.Add(avatarBorder);
+            headerPanel.Children.Add(avatarBorder);
 
-            // Имя пользователя и дата
-            var nameDateStack = new StackPanel { Orientation = Orientation.Vertical };
+            // Имя и дата
+            var nameDatePanel = new StackPanel();
 
             var nameText = new TextBlock
             {
                 Text = review.UserDisplayName,
                 FontWeight = FontWeights.Bold,
-                FontSize = 11
+                FontSize = 14,
+                Foreground = Brushes.White
             };
-            nameDateStack.Children.Add(nameText);
+            nameDatePanel.Children.Add(nameText);
 
             var dateText = new TextBlock
             {
                 Text = FormatReviewDate(review.UpdatedAt),
-                FontSize = 9,
-                Foreground = Brushes.Gray
+                FontSize = 11,
+                Foreground = new SolidColorBrush(Color.FromRgb(176, 176, 176))
             };
-            nameDateStack.Children.Add(dateText);
+            nameDatePanel.Children.Add(dateText);
 
-            headerStack.Children.Add(nameDateStack);
+            headerPanel.Children.Add(nameDatePanel);
 
-            // Если отзыв редактировался, показываем метку
+            // Метка редактирования
             if ((review.UpdatedAt - review.CreatedAt).TotalMinutes > 1)
             {
                 var editedLabel = new TextBlock
                 {
-                    Text = " (ред.)",
-                    FontSize = 9,
-                    Foreground = Brushes.Gray,
+                    Text = "(ред.)",
+                    FontSize = 11,
+                    Foreground = new SolidColorBrush(Color.FromRgb(176, 176, 176)),
                     VerticalAlignment = VerticalAlignment.Bottom,
-                    Margin = new Thickness(5, 0, 0, 0)
+                    Margin = new Thickness(5, 0, 0, 2)
                 };
-                headerStack.Children.Add(editedLabel);
+                headerPanel.Children.Add(editedLabel);
             }
 
-            Grid.SetRow(headerStack, 0);
-            grid.Children.Add(headerStack);
+            stackPanel.Children.Add(headerPanel);
 
             // Текст отзыва
             var reviewText = new TextBlock
             {
                 Text = review.ReviewText,
                 TextWrapping = TextWrapping.Wrap,
-                FontSize = 11,
-                Margin = new Thickness(0, 5, 0, 5)
+                FontSize = 14,
+                Foreground = Brushes.White,
+                Margin = new Thickness(0, 5, 0, 10)
             };
-            Grid.SetRow(reviewText, 1);
-            grid.Children.Add(reviewText);
+            stackPanel.Children.Add(reviewText);
 
-            // Кнопка редактирования (только для своего отзыва)
+            // Кнопка редактирования
             if (review.CanEdit)
             {
                 var editButton = new Button
                 {
                     Content = "✏️ Редактировать",
-                    FontSize = 10,
-                    Height = 20,
-                    Width = 80,
+                    FontSize = 12,
+                    Height = 30,
+                    Width = 100,
                     HorizontalAlignment = HorizontalAlignment.Right,
-                    Margin = new Thickness(0, 0, 0, 0),
+                    Background = new SolidColorBrush(Color.FromRgb(108, 92, 231)),
+                    Foreground = Brushes.White,
+                    BorderThickness = new Thickness(0),
+                    Cursor = Cursors.Hand,
                     Tag = review
                 };
-                editButton.Click += EditReviewButton_Click;
 
-                Grid.SetRow(editButton, 2);
-                grid.Children.Add(editButton);
+                // Создаем простой шаблон без использования FrameworkElementFactory
+                var borderFactory = new FrameworkElementFactory(typeof(Border));
+                borderFactory.SetValue(Border.BackgroundProperty, new TemplateBindingExtension(Button.BackgroundProperty));
+                borderFactory.SetValue(Border.CornerRadiusProperty, new CornerRadius(5));
+                borderFactory.SetValue(Border.PaddingProperty, new Thickness(10, 4, 10, 4));
+
+                var contentFactory = new FrameworkElementFactory(typeof(ContentPresenter));
+                contentFactory.SetValue(ContentPresenter.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+                contentFactory.SetValue(ContentPresenter.VerticalAlignmentProperty, VerticalAlignment.Center);
+
+                borderFactory.AppendChild(contentFactory);
+
+                editButton.Template = new ControlTemplate(typeof(Button))
+                {
+                    VisualTree = borderFactory
+                };
+
+                editButton.Click += EditReviewButton_Click;
+                stackPanel.Children.Add(editButton);
             }
 
-            border.Child = grid;
+            border.Child = stackPanel;
             return border;
+        }
+
+        private ControlTemplate CreateButtonTemplate()
+        {
+            var factory = new FrameworkElementFactory(typeof(Border));
+            factory.SetValue(Border.BackgroundProperty, new TemplateBindingExtension(Button.BackgroundProperty));
+            factory.SetValue(Border.CornerRadiusProperty, new CornerRadius(5));
+            factory.SetValue(Border.PaddingProperty, new Thickness(10, 5, 10, 5));
+
+            var contentFactory = new FrameworkElementFactory(typeof(ContentPresenter));
+            contentFactory.SetValue(ContentPresenter.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+            contentFactory.SetValue(ContentPresenter.VerticalAlignmentProperty, VerticalAlignment.Center);
+
+            factory.AppendChild(contentFactory);
+
+            return new ControlTemplate(typeof(Button)) { VisualTree = factory };
         }
 
         private void EditReviewButton_Click(object sender, RoutedEventArgs e)
@@ -363,7 +395,7 @@ namespace MovieRecV5.ViewModels
             {
                 // Загружаем отзыв в редактор
                 ReviewTextBox.Text = review.ReviewText;
-                ReviewTextBox.Foreground = Brushes.Black;
+                ReviewTextBox.Foreground = Brushes.White;
                 SaveReviewButton.Content = "Обновить отзыв";
                 DeleteReviewButton.Visibility = Visibility.Visible;
                 CancelEditReviewButton.Visibility = Visibility.Visible;

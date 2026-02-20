@@ -805,7 +805,7 @@ namespace MovieRecV5
             if (SearchTextBox.Text == "Введите название...")
             {
                 SearchTextBox.Text = "";
-                SearchTextBox.Foreground = Brushes.Black;
+                SearchTextBox.Foreground = Brushes.White;
             }
         }
 

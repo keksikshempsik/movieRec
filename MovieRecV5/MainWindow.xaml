@@ -154,8 +154,8 @@
 
                 <!-- Поисковая строка -->
                 <Border Grid.Column="1"
-        Background="{StaticResource BackgroundColor}"
-        BorderBrush="{StaticResource PrimaryColor}"
+        Background="#1E1E1E"
+        BorderBrush="#6C5CE7"
         BorderThickness="1"
         CornerRadius="25"
         Height="45"
@@ -167,8 +167,22 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Поле ввода с плейсхолдером -->
+                        <!-- Поле ввода -->
                         <Grid Grid.Column="0">
+                            <TextBox x:Name="SearchTextBox" 
+                     Background="#2D2D2D"
+                     Foreground="White"
+                     BorderThickness="0"
+                     Padding="15,0"
+                     VerticalAlignment="Center"
+                     FontSize="14"
+                     FontFamily="Segoe UI"
+                     CaretBrush="White"
+                     KeyDown="SearchTextBox_KeyDown"
+                     TextChanged="SearchTextBox_TextChanged"
+                     GotFocus="SearchTextBox_GotFocus"
+                     LostFocus="SearchTextBox_LostFocus"/>
+
                             <!-- Плейсхолдер -->
                             <TextBlock x:Name="SearchPlaceholder"
                        Text="Введите название фильма..."
@@ -181,39 +195,36 @@
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Visibility" Value="Collapsed"/>
                                         <Style.Triggers>
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding ElementName=SearchTextBox, Path=Text.Length}" Value="0"/>
-                                                    <Condition Binding="{Binding ElementName=SearchTextBox, Path=IsFocused}" Value="False"/>
-                                                </MultiDataTrigger.Conditions>
+                                            <DataTrigger Binding="{Binding ElementName=SearchTextBox, Path=Text.Length}" Value="0">
                                                 <Setter Property="Visibility" Value="Visible"/>
-                                            </MultiDataTrigger>
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-
-                            <!-- Само поле ввода -->
-                            <TextBox x:Name="SearchTextBox" 
-                     Style="{StaticResource ModernTextBox}"
-                     Background="#2D2D2D"
-                                Foreground="White"
-                                BorderThickness="0"
-                     Padding="15,0"
-                     VerticalAlignment="Center"
-                     KeyDown="SearchTextBox_KeyDown"
-                     TextChanged="SearchTextBox_TextChanged"
-                     CaretBrush="White"
-                     GotFocus="SearchTextBox_GotFocus"
-                     LostFocus="SearchTextBox_LostFocus"/>
                         </Grid>
 
                         <Button Grid.Column="1"
                 Name="SearchButton"
                 Content="🔍"
-                Style="{StaticResource IconButton}"
-                Background="{StaticResource PrimaryColor}"
-                Click="SearchButton_Click"/>
+                Background="#6C5CE7"
+                Foreground="White"
+                FontSize="18"
+                BorderThickness="0"
+                Width="45"
+                Height="45"
+                Click="SearchButton_Click"
+                Cursor="Hand">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}"
+                            CornerRadius="0,25,25,0">
+                                        <ContentPresenter HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
                     </Grid>
                 </Border>
 
