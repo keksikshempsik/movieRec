@@ -4,7 +4,8 @@
       Title="Информация о фильме"
       Background="#0F0F0F"
       Foreground="White"
-      FontFamily="Segoe UI">
+      FontFamily="Segoe UI"
+      ScrollViewer.VerticalScrollBarVisibility="Auto">
 
     <Page.Resources>
         <!-- Градиенты -->
@@ -21,16 +22,16 @@
         <!-- Стиль для кнопок действий -->
         <Style x:Key="ActionButton" TargetType="Button">
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Height" Value="38"/>
+            <Setter Property="Height" Value="34"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Background="{TemplateBinding Background}"
-                                CornerRadius="20"
-                                Padding="15,0">
+                                CornerRadius="17"
+                                Padding="12,0">
                             <ContentPresenter HorizontalAlignment="Center"
                                             VerticalAlignment="Center"/>
                         </Border>
@@ -43,7 +44,7 @@
         <Style x:Key="StarButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="FontSize" Value="28"/>
+            <Setter Property="FontSize" Value="24"/>
             <Setter Property="Foreground" Value="#FFD700"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
@@ -61,8 +62,8 @@
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderBrush" Value="#404040"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="12"/>
-            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="FontSize" Value="13"/>
             <Setter Property="CaretBrush" Value="White"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -70,8 +71,8 @@
                         <Border Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="8">
-                            <ScrollViewer x:Name="PART_ContentHost" Margin="5,0"/>
+                                CornerRadius="6">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="3,0"/>
                         </Border>
                     </ControlTemplate>
                 </Setter.Value>
@@ -80,25 +81,26 @@
     </Page.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="20">
+        <StackPanel Margin="15">
 
             <!-- Кнопка назад -->
             <Button x:Name="BackButton"
                     Style="{StaticResource ActionButton}"
                     Content="← Назад"
-                    Click="BackButton_Click"
                     Background="Transparent"
                     BorderBrush="#6C5CE7"
                     BorderThickness="1"
-                    Width="80"
+                    Width="70"
+                    Height="30"
+                    FontSize="11"
                     HorizontalAlignment="Left"
-                    Margin="0,0,0,20"/>
+                    Margin="0,0,0,15"/>
 
             <!-- Основная карточка -->
             <Border Background="#1E1E1E"
-                    CornerRadius="20"
-                    Padding="25"
-                    Margin="0,0,0,20">
+                    CornerRadius="15"
+                    Padding="20"
+                    Margin="0,0,0,15">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -107,39 +109,39 @@
 
                     <!-- Постер -->
                     <Border Grid.Column="0"
-                            CornerRadius="15"
+                            CornerRadius="10"
                             Background="#2D2D2D"
-                            MaxWidth="280"
-                            Height="380">
-                        <Image x:Name="MoviePoster" Stretch="Uniform" Margin="5"/>
+                            Width="180"
+                            Height="260">
+                        <Image x:Name="MoviePoster" Stretch="Uniform" Margin="3"/>
                     </Border>
 
                     <!-- Информация -->
-                    <StackPanel Grid.Column="1" Margin="20,0,0,0">
+                    <StackPanel Grid.Column="1" Margin="15,0,0,0">
                         <TextBlock x:Name="MovieTitle" 
-                                   FontSize="28" FontWeight="Bold" 
-                                   TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                   FontSize="22" FontWeight="Bold" 
+                                   TextWrapping="Wrap" Margin="0,0,0,5"/>
 
                         <TextBlock x:Name="MovieYear" 
-                                   FontSize="16" Foreground="#B0B0B0" 
-                                   Margin="0,0,0,12"/>
+                                   FontSize="14" Foreground="#B0B0B0" 
+                                   Margin="0,0,0,8"/>
 
                         <!-- Рейтинг -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                            <Border Background="#FFD700" CornerRadius="5" Padding="10,4" Margin="0,0,10,0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <Border Background="#FFD700" CornerRadius="4" Padding="8,3" Margin="0,0,8,0">
                                 <TextBlock x:Name="MovieRating" 
-                                           Text="7.5" FontSize="15" 
+                                           Text="7.5" FontSize="13" 
                                            FontWeight="Bold" Foreground="Black"/>
                             </Border>
                             <TextBlock x:Name="MovieVoteCount" 
-                                       Text="150K votes" FontSize="15" 
+                                       Text="150K votes" FontSize="13" 
                                        Foreground="#B0B0B0" VerticalAlignment="Center"/>
                         </StackPanel>
 
                         <!-- Жанры -->
-                        <TextBlock Text="Жанры:" FontSize="15" 
-                                   Foreground="#B0B0B0" Margin="0,0,0,5"/>
-                        <ItemsControl x:Name="GenresList" Margin="0,0,0,15">
+                        <TextBlock Text="Жанры:" FontSize="13" 
+                                   Foreground="#B0B0B0" Margin="0,0,0,3"/>
+                        <ItemsControl x:Name="GenresList" Margin="0,0,0,8">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <WrapPanel/>
@@ -148,37 +150,73 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Border Background="#2D2D2D" 
-                                            CornerRadius="15" 
-                                            Padding="12,6" Margin="0,0,8,5">
-                                        <TextBlock Text="{Binding}" Foreground="White" FontSize="13"/>
+                                            CornerRadius="12" 
+                                            Padding="8,3" Margin="0,0,5,3">
+                                        <TextBlock Text="{Binding}" Foreground="White" FontSize="11"/>
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <!-- Кнопки -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                            <Button x:Name="WatchedButton" Style="{StaticResource ActionButton}"
-                                    Content="✓ Просмотрено" Background="#00B894" Margin="0,0,8,0"/>
-                            <Button x:Name="WatchListButton" Style="{StaticResource ActionButton}"
-                                    Content="📋 Хочу посмотреть" Background="#FDCB6E" Margin="0,0,8,0"/>
-                            <Button x:Name="FavoriteButton" Style="{StaticResource ActionButton}"
-                                    Content="❤️ В избранное" Background="#E17055"/>
+                        <!-- КНОПКИ ДЕЙСТВИЙ В ДВЕ СТРОКИ -->
+
+                        <!-- Первая строка: кнопки "Отметить как просмотренный" и "Хочу посмотреть" -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <Button x:Name="WatchedButton" 
+                                    Style="{StaticResource ActionButton}"
+                                    Content="Отметить как просмотренный" 
+                                    Background="#6C5CE7" 
+                                    Margin="0,0,5,0"
+                                    Padding="10,0"/>
+
+                            <Button x:Name="WatchListButton" 
+                                    Style="{StaticResource ActionButton}"
+                                    Content="📋 Хочу посмотреть" 
+                                    Background="#FDCB6E" 
+                                    Margin="0,0,0,0"
+                                    Padding="10,0"/>
                         </StackPanel>
 
-                        <TextBlock x:Name="WatchedStatusText" Foreground="#00B894" Margin="0,0,0,3"/>
-                        <TextBlock x:Name="WatchListStatusText" Foreground="#FDCB6E" Margin="0,0,0,3"/>
-                        <TextBlock x:Name="FavoriteStatusText" Foreground="#E17055"/>
+                        <!-- Вторая строка: кнопка "В избранное" и статусы -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <Button x:Name="FavoriteButton" 
+                                    Style="{StaticResource ActionButton}"
+                                    Content="❤️ В избранное" 
+                                    Background="#E17055"
+                                    Margin="0,0,10,0"
+                                    Padding="10,0"/>
+
+                            <!-- Статусы (компактно) -->
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock x:Name="WatchedStatusText" 
+                                           Foreground="#00B894" 
+                                           Margin="0,0,8,0" 
+                                           FontSize="11"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock x:Name="WatchListStatusText" 
+                                           Foreground="#FDCB6E" 
+                                           Margin="0,0,8,0" 
+                                           FontSize="11"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock x:Name="FavoriteStatusText" 
+                                           Foreground="#E17055" 
+                                           FontSize="11"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Дополнительный статус (если нужно показать что-то еще) -->
+                        <TextBlock x:Name="AdditionalStatusText" Foreground="#B0B0B0" FontSize="10" Margin="0,2,0,0"/>
                     </StackPanel>
                 </Grid>
             </Border>
 
             <!-- Оценка -->
-            <Border Background="#1E1E1E" CornerRadius="20" Padding="20" Margin="0,0,0,20">
+            <Border Background="#1E1E1E" CornerRadius="15" Padding="15" Margin="0,0,0,15">
                 <StackPanel>
-                    <TextBlock Text="Ваша оценка:" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <TextBlock Text="Ваша оценка:" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,8"/>
                     <StackPanel Orientation="Horizontal">
-                        <ItemsControl x:Name="RatingStars" Loaded="RatingStars_Loaded">
+                        <ItemsControl x:Name="RatingStars">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <StackPanel Orientation="Horizontal"/>
@@ -194,70 +232,93 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                         <TextBlock x:Name="SelectedRatingText" Text="0/10" 
-                                   FontSize="15" Foreground="#B0B0B0" Margin="15,0,0,0"/>
+                                   FontSize="14" Foreground="#B0B0B0" Margin="15,0,0,0" 
+                                   VerticalAlignment="Center"/>
                     </StackPanel>
-                    <Button x:Name="SubmitRatingButton" Style="{StaticResource ActionButton}"
-                            Content="Подтвердить" Background="#6C5CE7" Width="140"
-                            Margin="0,15,0,0" IsEnabled="False"/>
+                    <Button x:Name="SubmitRatingButton" 
+                            Style="{StaticResource ActionButton}"
+                            Content="Подтвердить" 
+                            Background="#6C5CE7" 
+                            Width="120"
+                            Height="32"
+                            Margin="0,12,0,0" 
+                            IsEnabled="False"
+                            HorizontalAlignment="Left"/>
                 </StackPanel>
             </Border>
 
             <!-- Описание -->
-            <Border Background="#1E1E1E" CornerRadius="20" Padding="20" Margin="0,0,0,20">
+            <Border Background="#1E1E1E" CornerRadius="15" Padding="15" Margin="0,0,0,15">
                 <StackPanel>
-                    <TextBlock Text="Описание:" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <TextBlock Text="Описание:" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,5"/>
                     <TextBox x:Name="MovieDescription" 
-                             TextWrapping="Wrap" FontSize="14"
+                             TextWrapping="Wrap" FontSize="13"
                              Background="#2D2D2D" Foreground="White"
-                             BorderThickness="0" Padding="12"
-                             IsReadOnly="True" MinHeight="120"
+                             BorderThickness="0" Padding="10"
+                             IsReadOnly="True" MinHeight="100"
                              VerticalScrollBarVisibility="Auto"/>
                 </StackPanel>
             </Border>
 
             <!-- Отзывы -->
-            <Border Background="#1E1E1E" CornerRadius="20" Padding="20">
+            <Border Background="#1E1E1E" CornerRadius="15" Padding="15">
                 <StackPanel>
-                    <TextBlock Text="📝 Отзывы" FontSize="20" FontWeight="Bold" 
-                               Foreground="#6C5CE7" Margin="0,0,0,15"/>
+                    <TextBlock Text="📝 Отзывы" FontSize="18" FontWeight="Bold" 
+                   Foreground="#6C5CE7" Margin="0,0,0,12"/>
 
                     <!-- Панель ввода -->
-                    <Border Background="#2D2D2D" CornerRadius="12" Padding="15" Margin="0,0,0,15">
+                    <Border Background="#2D2D2D" CornerRadius="10" Padding="12" Margin="0,0,0,12">
                         <StackPanel>
                             <TextBlock x:Name="ReviewLoginPrompt" 
-                                       Text="Войдите в систему, чтобы оставить отзыв"
-                                       Foreground="#B0B0B0" Visibility="Collapsed"
-                                       HorizontalAlignment="Center" FontSize="14"/>
+                           Text="Войдите в систему, чтобы оставить отзыв"
+                           Foreground="#B0B0B0" Visibility="Collapsed"
+                           HorizontalAlignment="Center" FontSize="13"/>
 
                             <TextBox x:Name="ReviewTextBox"
-                                     Style="{StaticResource ReviewTextBoxStyle}"
-                                     TextWrapping="Wrap" AcceptsReturn="True"
-                                     Height="100" MaxLength="1000" Margin="0,0,0,10"/>
+                         Style="{StaticResource ReviewTextBoxStyle}"
+                         TextWrapping="Wrap" AcceptsReturn="True"
+                         Height="80" MaxLength="1000" Margin="0,0,0,8"/>
 
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                                 <TextBlock x:Name="ReviewCharCount" Text="0/1000"
-                                           FontSize="11" Foreground="#B0B0B0"
-                                           VerticalAlignment="Center" Margin="0,0,15,0"/>
-                                <Button x:Name="DeleteReviewButton" Style="{StaticResource ActionButton}"
-                                        Content="Удалить" Background="#D63031" 
-                                        Visibility="Collapsed" Margin="0,0,8,0"/>
-                                <Button x:Name="CancelEditReviewButton" Style="{StaticResource ActionButton}"
-                                        Content="Отмена" Background="#636E72" 
-                                        Visibility="Collapsed" Margin="0,0,8,0"/>
-                                <Button x:Name="SaveReviewButton" Style="{StaticResource ActionButton}"
-                                        Content="Опубликовать" Background="#6C5CE7" IsEnabled="False" Click="SaveReviewButton_Click"/>
+                               FontSize="10" Foreground="#B0B0B0"
+                               VerticalAlignment="Center" Margin="0,0,12,0"/>
+
+                                <!-- Кнопка Удалить с обработчиком -->
+                                <Button x:Name="DeleteReviewButton" 
+                            Style="{StaticResource ActionButton}"
+                            Content="Удалить" Background="#D63031" 
+                            Height="30" FontSize="11"
+                            Visibility="Collapsed" Margin="0,0,5,0"
+                            Click="DeleteReviewButton_Click"/>
+
+                                <!-- Кнопка Отмена с обработчиком -->
+                                <Button x:Name="CancelEditReviewButton" 
+                            Style="{StaticResource ActionButton}"
+                            Content="Отмена" Background="#636E72" 
+                            Height="30" FontSize="11"
+                            Visibility="Collapsed" Margin="0,0,5,0"
+                            Click="CancelEditReviewButton_Click"/>
+
+                                <!-- Кнопка Опубликовать/Обновить с обработчиком -->
+                                <Button x:Name="SaveReviewButton" 
+                            Style="{StaticResource ActionButton}"
+                            Content="Опубликовать" Background="#6C5CE7" 
+                            Height="30" FontSize="11" IsEnabled="False"
+                            Click="SaveReviewButton_Click"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
 
                     <!-- Список отзывов -->
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="450">
-                        <StackPanel x:Name="ReviewsListPanel" Margin="0,0,0,5"/>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="350">
+                        <StackPanel x:Name="ReviewsListPanel" Margin="0,0,0,3"/>
                     </ScrollViewer>
 
-                    <TextBlock x:Name="NoReviewsText" Text="Пока нет отзывов. Будьте первым!"
-                               Foreground="#B0B0B0" HorizontalAlignment="Center" 
-                               FontSize="15" Margin="20" Visibility="Collapsed"/>
+                    <TextBlock x:Name="NoReviewsText" 
+                   Text="Пока нет отзывов. Будьте первым!"
+                   Foreground="#B0B0B0" HorizontalAlignment="Center" 
+                   FontSize="14" Margin="15" Visibility="Collapsed"/>
                 </StackPanel>
             </Border>
         </StackPanel>

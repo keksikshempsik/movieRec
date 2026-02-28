@@ -7,7 +7,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace MovieRecV5.ViewModels
 {
@@ -23,7 +22,6 @@ namespace MovieRecV5.ViewModels
         private bool _isInWatchList = false;
         private bool _isFavorite = false;
 
-        // ===== НОВЫЕ ПОЛЯ ДЛЯ ОТЗЫВОВ =====
         private Review _currentUserReview;
         private bool _isEditingReview = false;
 
@@ -39,16 +37,479 @@ namespace MovieRecV5.ViewModels
             LoadUserRating();
             LoadWatchedStatus();
             LoadWatchListStatus();
-            LoadFavoriteStatus(); // НОВЫЙ МЕТОД
+            LoadFavoriteStatus();
 
-            // Загрузка отзывов
+            // Привязываем обработчики событий для кнопок
+            WatchedButton.Click += WatchedButton_Click;
+            WatchListButton.Click += WatchListButton_Click;
+            FavoriteButton.Click += FavoriteButton_Click;
+            SubmitRatingButton.Click += SubmitRatingButton_Click;
+            BackButton.Click += BackButton_Click;
+
             LoadReviews();
             InitializeReviewPanel();
 
             ReviewTextBox.TextChanged += ReviewTextBox_TextChanged;
         }
 
-        public MovieInfo() : this(new Movie()) { }
+        private void ShowMovieInfo(Movie movie)
+        {
+            var posterService = new MoviePosterService();
+
+            MovieTitle.Text = movie.Title;
+            MovieDescription.Text = movie.Description;
+            MovieYear.Text = movie.Year.ToString();
+            MovieVoteCount.Text = $"{movie.FormatVoteCount(movie.VoteCount)} votes";
+            MovieRating.Text = $"Rating: {movie.Rating:F1}";
+
+            if (!string.IsNullOrEmpty(movie.Poster))
+            {
+                try
+                {
+                    MoviePoster.Source = posterService.Base64ToBitmapImage(movie.Poster);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Ошибка загрузки постера: {ex.Message}");
+                }
+            }
+
+            if (movie.Genres != null && movie.Genres.Count > 0)
+            {
+                GenresList.ItemsSource = movie.Genres;
+            }
+        }
+
+        private void InitializeRatingStars()
+        {
+            var starValues = Enumerable.Range(1, 10).ToList();
+            RatingStars.ItemsSource = starValues;
+
+            // Подписываемся на событие загрузки элементов
+            RatingStars.Loaded += (s, e) => UpdateStarsAppearance();
+        }
+
+        private void LoadUserRating()
+        {
+            if (_currentUserId > 0)
+            {
+                var userRating = _databaseService.GetUserRating(_currentUserId, _movie.Slug);
+                if (userRating.HasValue)
+                {
+                    currentRating = userRating.Value;
+                    tempRating = currentRating;
+                    UpdateStarsAppearance();
+                    UpdateRatingText();
+                    SubmitRatingButton.IsEnabled = false;
+
+                    if (!_isWatched)
+                    {
+                        _databaseService.MarkMovieAsWatched(_currentUserId, _movie.Slug);
+                        _isWatched = true;
+                        UpdateWatchedButton();
+                    }
+                }
+            }
+        }
+
+        private void LoadWatchedStatus()
+        {
+            if (_currentUserId > 0)
+            {
+                _isWatched = _databaseService.IsMovieWatched(_currentUserId, _movie.Slug);
+                UpdateWatchedButton();
+            }
+            else
+            {
+                WatchedButton.IsEnabled = false;
+                WatchedButton.ToolTip = "Для отметки фильма необходимо войти в систему";
+            }
+        }
+
+        private void LoadWatchListStatus()
+        {
+            if (_currentUserId > 0)
+            {
+                _isInWatchList = _databaseService.IsInWatchList(_currentUserId, _movie.Slug);
+
+                // Если фильм просмотрен, он не должен быть в watchlist (кроме случая "хочу пересмотреть")
+                if (_isWatched && _isInWatchList)
+                {
+                    // Оставляем в watchlist для возможности "хочу пересмотреть"
+                    // Ничего не делаем
+                }
+
+                UpdateWatchListButton();
+            }
+            else
+            {
+                WatchListButton.IsEnabled = false;
+                WatchListButton.ToolTip = "Для добавления в список необходимо войти в систему";
+            }
+        }
+
+        private void LoadFavoriteStatus()
+        {
+            if (_currentUserId > 0)
+            {
+                _isFavorite = _databaseService.IsInFavorites(_currentUserId, _movie.Slug);
+                UpdateFavoriteButton();
+            }
+            else
+            {
+                FavoriteButton.IsEnabled = false;
+                FavoriteButton.ToolTip = "Для добавления в избранное необходимо войти в систему";
+            }
+        }
+
+        private void UpdateWatchedButton()
+        {
+            if (_isWatched)
+            {
+                WatchedButton.Content = "✓ Просмотрено";
+                WatchedButton.Background = new SolidColorBrush(Color.FromRgb(0, 184, 148)); // #00B894
+                WatchedStatusText.Text = "Фильм отмечен как просмотренный";
+                WatchedStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0, 184, 148));
+            }
+            else
+            {
+                WatchedButton.Content = "Отметить как просмотренный";
+                WatchedButton.Background = new SolidColorBrush(Color.FromRgb(108, 92, 231)); // #6C5CE7
+                WatchedStatusText.Text = "";
+            }
+        }
+
+        private void UpdateWatchListButton()
+        {
+            if (_isWatched && _isInWatchList)
+            {
+                WatchListButton.Content = "📋 Хочу пересмотреть";
+                WatchListButton.Background = new SolidColorBrush(Color.FromRgb(230, 126, 126)); // LightCoral
+                WatchListStatusText.Text = "Хотите пересмотреть этот фильм";
+                WatchListStatusText.Foreground = new SolidColorBrush(Color.FromRgb(230, 126, 126));
+            }
+            else if (_isInWatchList)
+            {
+                WatchListButton.Content = "📋 В списке";
+                WatchListButton.Background = new SolidColorBrush(Color.FromRgb(253, 203, 110)); // #FDCB6E
+                WatchListStatusText.Text = "Фильм добавлен в список";
+                WatchListStatusText.Foreground = new SolidColorBrush(Color.FromRgb(253, 203, 110));
+            }
+            else
+            {
+                WatchListButton.Content = "📋 Хочу посмотреть";
+                WatchListButton.Background = new SolidColorBrush(Color.FromRgb(253, 203, 110)); // #FDCB6E
+                WatchListStatusText.Text = "";
+            }
+        }
+
+        private void UpdateFavoriteButton()
+        {
+            if (_isFavorite)
+            {
+                FavoriteButton.Content = "❤️ В избранном";
+                FavoriteButton.Background = new SolidColorBrush(Color.FromRgb(225, 112, 85)); // #E17055
+                FavoriteStatusText.Text = "Фильм в избранном";
+                FavoriteStatusText.Foreground = new SolidColorBrush(Color.FromRgb(225, 112, 85));
+            }
+            else
+            {
+                FavoriteButton.Content = "❤️ В избранное";
+                FavoriteButton.Background = new SolidColorBrush(Color.FromRgb(225, 112, 85)); // #E17055
+                FavoriteStatusText.Text = "";
+            }
+        }
+
+        private void WatchedButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentUserId <= 0)
+            {
+                ShowStatusMessage("Для отметки фильма необходимо войти в систему", true);
+                return;
+            }
+
+            try
+            {
+                if (_isWatched)
+                {
+                    // Снимаем отметку о просмотре
+                    _databaseService.UnmarkMovieAsWatched(_currentUserId, _movie.Slug);
+                    _isWatched = false;
+
+                    // Если была оценка, сбрасываем её (опционально)
+                    if (currentRating > 0)
+                    {
+                        // Здесь можно добавить логику сброса оценки
+                    }
+
+                    ShowStatusMessage("✓ Отметка о просмотре снята", false);
+                }
+                else
+                {
+                    // Отмечаем как просмотренный
+                    _databaseService.MarkMovieAsWatched(_currentUserId, _movie.Slug);
+                    _isWatched = true;
+
+                    ShowStatusMessage("✓ Фильм отмечен как просмотренный", false);
+                }
+
+                UpdateWatchedButton();
+                UpdateWatchListButton(); // Обновляем, так как статус watchlist мог измениться
+            }
+            catch (Exception ex)
+            {
+                ShowStatusMessage($"✗ Ошибка: {ex.Message}", true);
+                Console.WriteLine($"Ошибка в WatchedButton_Click: {ex}");
+            }
+        }
+
+        private void WatchListButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentUserId <= 0)
+            {
+                ShowStatusMessage("Для добавления в список необходимо войти в систему", true);
+                return;
+            }
+
+            try
+            {
+                if (_isInWatchList)
+                {
+                    // Удаляем из списка
+                    _databaseService.RemoveFromWatchList(_currentUserId, _movie.Slug);
+                    _isInWatchList = false;
+                    ShowStatusMessage("✓ Фильм удален из списка", false);
+                }
+                else
+                {
+                    // Добавляем в список
+                    _databaseService.AddToWatchList(_currentUserId, _movie.Slug);
+                    _isInWatchList = true;
+                    ShowStatusMessage("✓ Фильм добавлен в список", false);
+                }
+
+                UpdateWatchListButton();
+            }
+            catch (Exception ex)
+            {
+                ShowStatusMessage($"✗ Ошибка: {ex.Message}", true);
+                Console.WriteLine($"Ошибка в WatchListButton_Click: {ex}");
+            }
+        }
+
+        private void FavoriteButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentUserId <= 0)
+            {
+                ShowStatusMessage("Для добавления в избранное необходимо войти в систему", true);
+                return;
+            }
+
+            try
+            {
+                if (_isFavorite)
+                {
+                    // Удаляем из избранного
+                    _databaseService.RemoveFromFavorites(_currentUserId, _movie.Slug);
+                    _isFavorite = false;
+                    ShowStatusMessage("✓ Фильм удален из избранного", false);
+                }
+                else
+                {
+                    // Добавляем в избранное
+                    _databaseService.AddToFavorites(_currentUserId, _movie.Slug);
+                    _isFavorite = true;
+                    ShowStatusMessage("✓ Фильм добавлен в избранное", false);
+                }
+
+                UpdateFavoriteButton();
+            }
+            catch (Exception ex)
+            {
+                ShowStatusMessage($"✗ Ошибка: {ex.Message}", true);
+                Console.WriteLine($"Ошибка в FavoriteButton_Click: {ex}");
+            }
+        }
+
+        private void StarButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentUserId <= 0)
+            {
+                ShowStatusMessage("Для оценки необходимо войти в систему", true);
+                return;
+            }
+
+            if (sender is Button button && button.Tag is int rating)
+            {
+                currentRating = rating;
+                tempRating = rating;
+                UpdateStarsAppearance();
+                UpdateRatingText();
+                SubmitRatingButton.IsEnabled = true;
+            }
+        }
+
+        private void StarButton_MouseEnter(object sender, MouseEventArgs e)
+        {
+            if (_currentUserId <= 0) return;
+
+            if (sender is Button button && button.Tag is int rating)
+            {
+                tempRating = rating;
+                UpdateStarsAppearance();
+            }
+        }
+
+        private void StarButton_MouseLeave(object sender, MouseEventArgs e)
+        {
+            if (_currentUserId <= 0) return;
+
+            tempRating = currentRating;
+            UpdateStarsAppearance();
+        }
+
+        private void UpdateStarsAppearance()
+        {
+            // Находим все кнопки звезд
+            starButtons.Clear();
+            for (int i = 0; i < 10; i++)
+            {
+                var container = RatingStars.ItemContainerGenerator.ContainerFromIndex(i);
+                if (container != null)
+                {
+                    var contentPresenter = container as ContentPresenter;
+                    if (contentPresenter != null)
+                    {
+                        var button = FindVisualChild<Button>(contentPresenter);
+                        if (button != null)
+                        {
+                            starButtons.Add(button);
+
+                            // Обновляем обработчики событий
+                            button.Click -= StarButton_Click;
+                            button.Click += StarButton_Click;
+                            button.MouseEnter -= StarButton_MouseEnter;
+                            button.MouseEnter += StarButton_MouseEnter;
+                            button.MouseLeave -= StarButton_MouseLeave;
+                            button.MouseLeave += StarButton_MouseLeave;
+                        }
+                    }
+                }
+            }
+
+            // Обновляем цвет звезд
+            for (int i = 0; i < starButtons.Count; i++)
+            {
+                if (i < tempRating)
+                {
+                    starButtons[i].Foreground = new SolidColorBrush(Color.FromRgb(255, 215, 0)); // Gold
+                    starButtons[i].Content = "★";
+                }
+                else
+                {
+                    starButtons[i].Foreground = new SolidColorBrush(Color.FromRgb(176, 176, 176)); // Light gray
+                    starButtons[i].Content = "★";
+                }
+            }
+        }
+
+        private void UpdateRatingText()
+        {
+            SelectedRatingText.Text = $"{currentRating}/10";
+        }
+
+        private void SubmitRatingButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentUserId <= 0)
+            {
+                ShowStatusMessage("Для оценки необходимо войти в систему", true);
+                return;
+            }
+
+            if (currentRating == 0)
+            {
+                ShowStatusMessage("Выберите оценку", true);
+                return;
+            }
+
+            try
+            {
+                // Сохраняем оценку
+                _databaseService.SaveUserRating(_currentUserId, _movie.Slug, currentRating);
+
+                // Обновляем рейтинг фильма
+                _databaseService.UpdateMovieRating(_movie.Slug, currentRating);
+
+                // Если фильм не был отмечен как просмотренный, отмечаем его
+                if (!_isWatched)
+                {
+                    _databaseService.MarkMovieAsWatched(_currentUserId, _movie.Slug);
+                    _isWatched = true;
+                    UpdateWatchedButton();
+                }
+
+                // Если фильм был в watchlist, предлагаем оставить для пересмотра или удаляем
+                if (_isInWatchList)
+                {
+                    // Оставляем решение за пользователем - можно оставить уведомление
+                    // _isInWatchList = false;
+                    // UpdateWatchListButton();
+                }
+
+                SubmitRatingButton.IsEnabled = false;
+                RefreshMovieRating();
+
+                ShowStatusMessage("✓ Оценка сохранена", false);
+            }
+            catch (Exception ex)
+            {
+                ShowStatusMessage($"✗ Ошибка: {ex.Message}", true);
+                Console.WriteLine($"Ошибка в SubmitRatingButton_Click: {ex}");
+            }
+        }
+
+        private void RefreshMovieRating()
+        {
+            try
+            {
+                // Обновляем информацию о фильме из базы данных
+                var movies = _databaseService.SearchMoviesInDatabase(_movie.Title, _currentUserId);
+                var updatedMovie = movies.FirstOrDefault(m => m.Slug == _movie.Slug);
+
+                if (updatedMovie != null)
+                {
+                    _movie = updatedMovie;
+                    MovieVoteCount.Text = $"{_movie.FormatVoteCount(_movie.VoteCount)} votes";
+                    MovieRating.Text = $"Rating: {_movie.Rating:F1}";
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка обновления рейтинга: {ex}");
+            }
+        }
+
+        private T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T result)
+                    return result;
+                else
+                {
+                    var descendant = FindVisualChild<T>(child);
+                    if (descendant != null)
+                        return descendant;
+                }
+            }
+            return null;
+        }
+
+        private void BackButton_Click(object sender, RoutedEventArgs e)
+        {
+            Window.GetWindow(this)?.Close();
+        }
 
         // ===== МЕТОДЫ ДЛЯ ОТЗЫВОВ =====
 
@@ -56,7 +517,6 @@ namespace MovieRecV5.ViewModels
         {
             if (_currentUserId <= 0)
             {
-                // Пользователь не авторизован
                 ReviewLoginPrompt.Visibility = Visibility.Visible;
                 ReviewTextBox.Visibility = Visibility.Collapsed;
                 SaveReviewButton.Visibility = Visibility.Collapsed;
@@ -66,56 +526,35 @@ namespace MovieRecV5.ViewModels
             }
             else
             {
-                // Пользователь авторизован
                 ReviewLoginPrompt.Visibility = Visibility.Collapsed;
                 ReviewTextBox.Visibility = Visibility.Visible;
                 SaveReviewButton.Visibility = Visibility.Visible;
                 ReviewCharCount.Visibility = Visibility.Visible;
 
-                // Проверяем, есть ли уже отзыв
                 _currentUserReview = _databaseService.GetUserReview(_currentUserId, _movie.Slug);
 
                 if (_currentUserReview != null)
                 {
-                    // Уже есть отзыв
                     ReviewTextBox.Text = _currentUserReview.ReviewText;
-                    ReviewTextBox.Foreground = Brushes.White;
                     SaveReviewButton.Content = "Обновить отзыв";
                     DeleteReviewButton.Visibility = Visibility.Visible;
                     SaveReviewButton.IsEnabled = true;
-                    _isEditingReview = false;
                 }
                 else
                 {
-                    // Нет отзыва - пустое поле
                     ReviewTextBox.Text = "";
-                    ReviewTextBox.Foreground = Brushes.White;
                     SaveReviewButton.Content = "Опубликовать отзыв";
                     DeleteReviewButton.Visibility = Visibility.Collapsed;
                     SaveReviewButton.IsEnabled = false;
-                    _isEditingReview = false;
                 }
 
                 UpdateCharCount();
             }
         }
 
-        private void ReviewTextBox_GotFocus(object sender, RoutedEventArgs e)
-        {
-            // Ничего не делаем, так как у нас нет placeholder
-        }
-
-        private void ReviewTextBox_LostFocus(object sender, RoutedEventArgs e)
-        {
-            // Проверяем, нужно ли включать кнопку
-            SaveReviewButton.IsEnabled = !string.IsNullOrWhiteSpace(ReviewTextBox.Text);
-        }
-
         private void ReviewTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             UpdateCharCount();
-
-            // Включаем/выключаем кнопку сохранения
             SaveReviewButton.IsEnabled = !string.IsNullOrWhiteSpace(ReviewTextBox.Text);
         }
 
@@ -123,7 +562,6 @@ namespace MovieRecV5.ViewModels
         {
             int count = ReviewTextBox.Text.Length;
             ReviewCharCount.Text = $"{count}/1000";
-
             ReviewCharCount.Foreground = count >= 1000 ? Brushes.Red : Brushes.Gray;
         }
 
@@ -151,22 +589,18 @@ namespace MovieRecV5.ViewModels
 
             try
             {
-                // Сохраняем отзыв
                 _databaseService.SaveReview(_currentUserId, _movie.Slug, reviewText);
-
-                // Обновляем интерфейс
                 _currentUserReview = _databaseService.GetUserReview(_currentUserId, _movie.Slug);
                 SaveReviewButton.Content = "Обновить отзыв";
                 DeleteReviewButton.Visibility = Visibility.Visible;
-
-                // Перезагружаем список отзывов
+                CancelEditReviewButton.Visibility = Visibility.Collapsed;
                 LoadReviews();
-
                 ShowStatusMessage("✓ Отзыв сохранен", false);
             }
             catch (Exception ex)
             {
                 ShowStatusMessage($"✗ Ошибка: {ex.Message}", true);
+                Console.WriteLine($"Ошибка в SaveReviewButton_Click: {ex}");
             }
         }
 
@@ -174,30 +608,33 @@ namespace MovieRecV5.ViewModels
         {
             if (_currentUserReview == null) return;
 
+            var result = MessageBox.Show("Вы уверены, что хотите удалить отзыв?",
+                                         "Подтверждение",
+                                         MessageBoxButton.YesNo,
+                                         MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes) return;
+
             try
             {
                 bool deleted = _databaseService.DeleteReview(_currentUserReview.Id, _currentUserId);
 
                 if (deleted)
                 {
-                    // Сбрасываем интерфейс
                     ReviewTextBox.Text = "";
-                    ReviewTextBox.Foreground = Brushes.White;
                     SaveReviewButton.Content = "Опубликовать отзыв";
                     DeleteReviewButton.Visibility = Visibility.Collapsed;
                     CancelEditReviewButton.Visibility = Visibility.Collapsed;
                     SaveReviewButton.IsEnabled = false;
                     _currentUserReview = null;
-
-                    // Перезагружаем список отзывов
                     LoadReviews();
-
                     ShowStatusMessage("✓ Отзыв удален", false);
                 }
             }
             catch (Exception ex)
             {
                 ShowStatusMessage($"✗ Ошибка: {ex.Message}", true);
+                Console.WriteLine($"Ошибка в DeleteReviewButton_Click: {ex}");
             }
         }
 
@@ -205,19 +642,15 @@ namespace MovieRecV5.ViewModels
         {
             if (_currentUserReview != null)
             {
-                // Возвращаем исходный текст
                 ReviewTextBox.Text = _currentUserReview.ReviewText;
-                ReviewTextBox.Foreground = Brushes.White;
             }
             else
             {
-                // Очищаем поле
                 ReviewTextBox.Text = "";
-                ReviewTextBox.Foreground = Brushes.White;
             }
 
             CancelEditReviewButton.Visibility = Visibility.Collapsed;
-            _isEditingReview = false;
+            SaveReviewButton.Content = _currentUserReview != null ? "Обновить отзыв" : "Опубликовать отзыв";
         }
 
         private void LoadReviews()
@@ -247,30 +680,30 @@ namespace MovieRecV5.ViewModels
                 Background = new SolidColorBrush(Color.FromRgb(30, 30, 30)),
                 BorderBrush = new SolidColorBrush(Color.FromRgb(64, 64, 64)),
                 BorderThickness = new Thickness(1),
-                Margin = new Thickness(0, 0, 0, 12),
-                Padding = new Thickness(15),
-                CornerRadius = new CornerRadius(10)
+                Margin = new Thickness(0, 0, 0, 10),
+                Padding = new Thickness(12),
+                CornerRadius = new CornerRadius(8)
             };
 
             var stackPanel = new StackPanel();
 
-            // Шапка
-            var headerPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8) };
+            // Шапка с информацией о пользователе
+            var headerPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 5) };
 
-            // Аватар
+            // Аватар (инициалы)
             var avatarBorder = new Border
             {
-                Width = 32,
-                Height = 32,
+                Width = 28,
+                Height = 28,
                 Background = new SolidColorBrush(Color.FromRgb(108, 92, 231)),
-                CornerRadius = new CornerRadius(16),
-                Margin = new Thickness(0, 0, 10, 0)
+                CornerRadius = new CornerRadius(14),
+                Margin = new Thickness(0, 0, 8, 0)
             };
 
             var avatarText = new TextBlock
             {
                 Text = GetInitials(review.UserDisplayName),
-                FontSize = 12,
+                FontSize = 11,
                 FontWeight = FontWeights.Bold,
                 Foreground = Brushes.White,
                 HorizontalAlignment = HorizontalAlignment.Center,
@@ -286,7 +719,7 @@ namespace MovieRecV5.ViewModels
             {
                 Text = review.UserDisplayName,
                 FontWeight = FontWeights.Bold,
-                FontSize = 14,
+                FontSize = 13,
                 Foreground = Brushes.White
             };
             nameDatePanel.Children.Add(nameText);
@@ -294,27 +727,12 @@ namespace MovieRecV5.ViewModels
             var dateText = new TextBlock
             {
                 Text = FormatReviewDate(review.UpdatedAt),
-                FontSize = 11,
+                FontSize = 10,
                 Foreground = new SolidColorBrush(Color.FromRgb(176, 176, 176))
             };
             nameDatePanel.Children.Add(dateText);
 
             headerPanel.Children.Add(nameDatePanel);
-
-            // Метка редактирования
-            if ((review.UpdatedAt - review.CreatedAt).TotalMinutes > 1)
-            {
-                var editedLabel = new TextBlock
-                {
-                    Text = "(ред.)",
-                    FontSize = 11,
-                    Foreground = new SolidColorBrush(Color.FromRgb(176, 176, 176)),
-                    VerticalAlignment = VerticalAlignment.Bottom,
-                    Margin = new Thickness(5, 0, 0, 2)
-                };
-                headerPanel.Children.Add(editedLabel);
-            }
-
             stackPanel.Children.Add(headerPanel);
 
             // Текст отзыва
@@ -322,20 +740,20 @@ namespace MovieRecV5.ViewModels
             {
                 Text = review.ReviewText,
                 TextWrapping = TextWrapping.Wrap,
-                FontSize = 14,
+                FontSize = 13,
                 Foreground = Brushes.White,
-                Margin = new Thickness(0, 5, 0, 10)
+                Margin = new Thickness(0, 5, 0, 8)
             };
             stackPanel.Children.Add(reviewText);
 
-            // Кнопка редактирования
+            // Кнопка редактирования (только для своего отзыва)
             if (review.CanEdit)
             {
                 var editButton = new Button
                 {
                     Content = "✏️ Редактировать",
-                    FontSize = 12,
-                    Height = 30,
+                    FontSize = 11,
+                    Height = 28,
                     Width = 100,
                     HorizontalAlignment = HorizontalAlignment.Right,
                     Background = new SolidColorBrush(Color.FromRgb(108, 92, 231)),
@@ -345,24 +763,10 @@ namespace MovieRecV5.ViewModels
                     Tag = review
                 };
 
-                // Создаем простой шаблон без использования FrameworkElementFactory
-                var borderFactory = new FrameworkElementFactory(typeof(Border));
-                borderFactory.SetValue(Border.BackgroundProperty, new TemplateBindingExtension(Button.BackgroundProperty));
-                borderFactory.SetValue(Border.CornerRadiusProperty, new CornerRadius(5));
-                borderFactory.SetValue(Border.PaddingProperty, new Thickness(10, 4, 10, 4));
-
-                var contentFactory = new FrameworkElementFactory(typeof(ContentPresenter));
-                contentFactory.SetValue(ContentPresenter.HorizontalAlignmentProperty, HorizontalAlignment.Center);
-                contentFactory.SetValue(ContentPresenter.VerticalAlignmentProperty, VerticalAlignment.Center);
-
-                borderFactory.AppendChild(contentFactory);
-
-                editButton.Template = new ControlTemplate(typeof(Button))
-                {
-                    VisualTree = borderFactory
-                };
-
+                // Упрощенный шаблон для кнопки
+                editButton.Template = CreateSimpleButtonTemplate();
                 editButton.Click += EditReviewButton_Click;
+
                 stackPanel.Children.Add(editButton);
             }
 
@@ -370,12 +774,12 @@ namespace MovieRecV5.ViewModels
             return border;
         }
 
-        private ControlTemplate CreateButtonTemplate()
+        private ControlTemplate CreateSimpleButtonTemplate()
         {
             var factory = new FrameworkElementFactory(typeof(Border));
             factory.SetValue(Border.BackgroundProperty, new TemplateBindingExtension(Button.BackgroundProperty));
-            factory.SetValue(Border.CornerRadiusProperty, new CornerRadius(5));
-            factory.SetValue(Border.PaddingProperty, new Thickness(10, 5, 10, 5));
+            factory.SetValue(Border.CornerRadiusProperty, new CornerRadius(4));
+            factory.SetValue(Border.PaddingProperty, new Thickness(8, 3, 8, 3));
 
             var contentFactory = new FrameworkElementFactory(typeof(ContentPresenter));
             contentFactory.SetValue(ContentPresenter.HorizontalAlignmentProperty, HorizontalAlignment.Center);
@@ -393,65 +797,21 @@ namespace MovieRecV5.ViewModels
 
             if (review != null)
             {
-                // Загружаем отзыв в редактор
                 ReviewTextBox.Text = review.ReviewText;
-                ReviewTextBox.Foreground = Brushes.White;
                 SaveReviewButton.Content = "Обновить отзыв";
                 DeleteReviewButton.Visibility = Visibility.Visible;
                 CancelEditReviewButton.Visibility = Visibility.Visible;
                 SaveReviewButton.IsEnabled = true;
                 _isEditingReview = true;
-
-                // Прокручиваем к редактору
                 ReviewTextBox.Focus();
-                ReviewTextBox.CaretIndex = ReviewTextBox.Text.Length;
             }
-        }
-
-        private void ShowStatusMessage(string message, bool isError)
-        {
-            var statusBar = new Border
-            {
-                Background = isError ? Brushes.LightCoral : Brushes.LightGreen,
-                Padding = new Thickness(5),
-                Margin = new Thickness(0, 5, 0, 0),
-                CornerRadius = new CornerRadius(3)
-            };
-
-            var textBlock = new TextBlock
-            {
-                Text = message,
-                Foreground = Brushes.Black,
-                FontSize = 11,
-                HorizontalAlignment = HorizontalAlignment.Center
-            };
-
-            statusBar.Child = textBlock;
-
-            // Добавляем в список отзывов временно
-            ReviewsListPanel.Children.Insert(0, statusBar);
-
-            // Удаляем через 3 секунды
-            var timer = new System.Windows.Threading.DispatcherTimer();
-            timer.Interval = TimeSpan.FromSeconds(3);
-            timer.Tick += (s, e) =>
-            {
-                ReviewsListPanel.Children.Remove(statusBar);
-                timer.Stop();
-            };
-            timer.Start();
         }
 
         private string GetInitials(string displayName)
         {
             if (string.IsNullOrEmpty(displayName)) return "??";
-
             var parts = displayName.Split(' ');
-            if (parts.Length >= 2)
-            {
-                return (parts[0][0].ToString() + parts[1][0].ToString()).ToUpper();
-            }
-
+            if (parts.Length >= 2) return (parts[0][0].ToString() + parts[1][0].ToString()).ToUpper();
             return displayName.Length >= 2 ? displayName.Substring(0, 2).ToUpper() : displayName.ToUpper();
         }
 
@@ -460,485 +820,42 @@ namespace MovieRecV5.ViewModels
             var now = DateTime.Now;
             var diff = now - date;
 
-            if (diff.TotalMinutes < 1)
-                return "только что";
-            if (diff.TotalMinutes < 60)
-                return $"{(int)diff.TotalMinutes} мин. назад";
-            if (diff.TotalHours < 24)
-                return $"{(int)diff.TotalHours} ч. назад";
-            if (diff.TotalDays < 7)
-                return $"{(int)diff.TotalDays} дн. назад";
-
+            if (diff.TotalMinutes < 1) return "только что";
+            if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes} мин. назад";
+            if (diff.TotalHours < 24) return $"{(int)diff.TotalHours} ч. назад";
+            if (diff.TotalDays < 7) return $"{(int)diff.TotalDays} дн. назад";
             return date.ToString("dd.MM.yyyy");
         }
 
-        // ===== СУЩЕСТВУЮЩИЕ МЕТОДЫ =====
-        private void BackButton_Click(object sender, RoutedEventArgs e)
+        private void ShowStatusMessage(string message, bool isError)
         {
-            Window.GetWindow(this)?.Close();
-        }
-
-        private void ShowMovieInfo(Movie movie)
-        {
-            var posterService = new MoviePosterService();
-
-            MovieTitle.Text = movie.Title;
-            MovieDescription.Text = movie.Description;
-            MovieYear.Text = movie.Year.ToString();
-            MovieVoteCount.Text = $"{movie.FormatVoteCount(movie.VoteCount)} votes";
-            MovieRating.Text = $"Rating: {movie.Rating:F1}";
-
-            if (!string.IsNullOrEmpty(movie.Poster))
+            var statusBar = new Border
             {
-                MoviePoster.Source = posterService.Base64ToBitmapImage(movie.Poster);
-            }
+                Background = isError ? new SolidColorBrush(Color.FromRgb(214, 48, 49)) : new SolidColorBrush(Color.FromRgb(0, 184, 148)),
+                Padding = new Thickness(8),
+                Margin = new Thickness(0, 5, 0, 0),
+                CornerRadius = new CornerRadius(4),
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
 
-            if (movie.Genres != null && movie.Genres.Count > 0)
+            var textBlock = new TextBlock
             {
-                GenresList.ItemsSource = movie.Genres;
-            }
-        }
+                Text = message,
+                Foreground = Brushes.White,
+                FontSize = 11
+            };
 
-        private void InitializeRatingStars()
-        {
-            var starValues = Enumerable.Range(1, 10).ToList();
-            RatingStars.ItemsSource = starValues;
+            statusBar.Child = textBlock;
+            ReviewsListPanel.Children.Insert(0, statusBar);
 
-            foreach (var item in RatingStars.Items)
+            var timer = new System.Windows.Threading.DispatcherTimer();
+            timer.Interval = TimeSpan.FromSeconds(3);
+            timer.Tick += (s, e) =>
             {
-                var container = RatingStars.ItemContainerGenerator.ContainerFromItem(item);
-                if (container is ContentPresenter contentPresenter)
-                {
-                    var button = FindVisualChild<Button>(contentPresenter);
-                    if (button != null)
-                    {
-                        button.MouseDoubleClick += StarButton_DoubleClick;
-                    }
-                }
-            }
-        }
-
-        private void StarButton_DoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            if (currentRating > 0 && _isWatched)
-            {
-                var result = MessageBox.Show("Сбросить оценку? Это также снимет отметку о просмотре.",
-                                           "Подтверждение",
-                                           MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-                if (result == MessageBoxResult.Yes)
-                {
-                    _databaseService.UnmarkMovieAsWatched(_currentUserId, _movie.Slug);
-
-                    _isWatched = false;
-                    currentRating = 0;
-                    tempRating = 0;
-
-                    UpdateWatchedButton();
-                    UpdateStarsAppearance();
-                    UpdateRatingText();
-                    SubmitRatingButton.IsEnabled = true;
-                }
-            }
-        }
-
-        private void LoadUserRating()
-        {
-            if (_currentUserId > 0)
-            {
-                var userRating = _databaseService.GetUserRating(_currentUserId, _movie.Slug);
-                if (userRating.HasValue)
-                {
-                    currentRating = userRating.Value;
-                    tempRating = currentRating;
-                    UpdateStarsAppearance();
-                    UpdateRatingText();
-                    SubmitRatingButton.IsEnabled = false;
-
-                    if (!_isWatched)
-                    {
-                        _databaseService.MarkMovieAsWatched(_currentUserId, _movie.Slug);
-                        _isWatched = true;
-                        UpdateWatchedButton();
-                    }
-                }
-            }
-        }
-
-        private void StarButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && button.Tag is int rating)
-            {
-                currentRating = rating;
-                tempRating = rating;
-                UpdateStarsAppearance();
-                UpdateRatingText();
-                SubmitRatingButton.IsEnabled = true;
-            }
-        }
-
-        private void StarButton_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
-        {
-            if (sender is Button button && button.Tag is int rating)
-            {
-                tempRating = rating;
-                UpdateStarsAppearance();
-            }
-        }
-
-        private void StarButton_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
-        {
-            tempRating = currentRating;
-            UpdateStarsAppearance();
-        }
-
-        private void UpdateStarsAppearance()
-        {
-            if (RatingStars.ItemContainerGenerator.Status != System.Windows.Controls.Primitives.GeneratorStatus.ContainersGenerated)
-            {
-                RatingStars.UpdateLayout();
-            }
-
-            starButtons.Clear();
-            for (int i = 0; i < RatingStars.Items.Count; i++)
-            {
-                var container = RatingStars.ItemContainerGenerator.ContainerFromIndex(i);
-                if (container != null)
-                {
-                    var contentPresenter = container as ContentPresenter;
-                    if (contentPresenter != null)
-                    {
-                        var button = FindVisualChild<Button>(contentPresenter);
-                        if (button != null)
-                        {
-                            starButtons.Add(button);
-                        }
-                    }
-                }
-            }
-
-            for (int i = 0; i < starButtons.Count; i++)
-            {
-                if (i < tempRating)
-                {
-                    starButtons[i].Foreground = Brushes.Gold;
-                    starButtons[i].Content = "★";
-                }
-                else
-                {
-                    starButtons[i].Foreground = Brushes.LightGray;
-                    starButtons[i].Content = "★";
-                }
-            }
-        }
-
-        private void UpdateRatingText()
-        {
-            SelectedRatingText.Text = $"{currentRating}/10";
-        }
-
-        private void SubmitRatingButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentUserId <= 0)
-            {
-                ShowStatusMessage("Для оценки фильма необходимо войти в систему", true);
-                return;
-            }
-
-            try
-            {
-                _databaseService.SaveUserRating(_currentUserId, _movie.Slug, currentRating);
-                _databaseService.UpdateMovieRating(_movie.Slug, currentRating);
-
-                if (!_isWatched)
-                {
-                    _databaseService.MarkMovieAsWatched(_currentUserId, _movie.Slug);
-                    _isWatched = true;
-                }
-
-                if (_isInWatchList)
-                {
-                    _isInWatchList = false;
-                }
-
-                UpdateWatchedButton();
-                UpdateWatchListButton();
-                RefreshMovieRating();
-
-                SubmitRatingButton.IsEnabled = false;
-                UpdateStarsAppearance();
-
-                ShowStatusMessage("✓ Оценка сохранена", false);
-            }
-            catch (Exception ex)
-            {
-                ShowStatusMessage($"✗ Ошибка: {ex.Message}", true);
-            }
-        }
-
-        private void RefreshMovieRating()
-        {
-            var movies = _databaseService.SearchMoviesInDatabase(_movie.Title);
-            var updatedMovie = movies.FirstOrDefault(m => m.Slug == _movie.Slug);
-
-            if (updatedMovie != null)
-            {
-                _movie = updatedMovie;
-                MovieVoteCount.Text = $"{_movie.FormatVoteCount(_movie.VoteCount)} votes";
-                MovieRating.Text = $"Rating: {_movie.Rating:F1}";
-            }
-        }
-
-        private T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
-        {
-            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
-            {
-                var child = VisualTreeHelper.GetChild(parent, i);
-                if (child is T result)
-                    return result;
-                else
-                {
-                    var descendant = FindVisualChild<T>(child);
-                    if (descendant != null)
-                        return descendant;
-                }
-            }
-            return null;
-        }
-
-        private void RatingStars_Loaded(object sender, RoutedEventArgs e)
-        {
-            UpdateStarsAppearance();
-        }
-
-        private void StarButton_Loaded(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void LoadWatchedStatus()
-        {
-            if (_currentUserId > 0)
-            {
-                _isWatched = _databaseService.IsMovieWatched(_currentUserId, _movie.Slug);
-                UpdateWatchedButton();
-            }
-            else
-            {
-                WatchedButton.IsEnabled = false;
-                WatchedButton.ToolTip = "Для отметки фильма необходимо войти в систему";
-            }
-        }
-
-        private void UpdateWatchedButton()
-        {
-            if (_isWatched)
-            {
-                WatchedButton.Content = "Просмотрено ✓";
-                WatchedButton.Background = Brushes.LightGreen;
-                WatchedStatusText.Text = "Фильм отмечен как просмотренный";
-            }
-            else
-            {
-                WatchedButton.Content = "Отметить как просмотренный";
-                WatchedButton.Background = Brushes.LightBlue;
-                WatchedStatusText.Text = "";
-            }
-
-            UpdateWatchListButton();
-        }
-
-        private void WatchedButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentUserId <= 0)
-            {
-                ShowStatusMessage("Для отметки фильма необходимо войти в систему", true);
-                return;
-            }
-
-            try
-            {
-                if (_isWatched)
-                {
-                    _databaseService.UnmarkMovieAsWatched(_currentUserId, _movie.Slug);
-                    _isWatched = false;
-
-                    currentRating = 0;
-                    tempRating = 0;
-                    UpdateStarsAppearance();
-                    UpdateRatingText();
-                    SubmitRatingButton.IsEnabled = true;
-
-                    ShowStatusMessage("✓ Отметка о просмотре снята", false);
-                }
-                else
-                {
-                    _databaseService.MarkMovieAsWatched(_currentUserId, _movie.Slug);
-                    _isWatched = true;
-
-                    // При отметке просмотра удаляем из watch list, но НЕ из избранного
-                    if (_isInWatchList)
-                    {
-                        _databaseService.RemoveFromWatchList(_currentUserId, _movie.Slug);
-                        _isInWatchList = false;
-                    }
-
-                    ShowStatusMessage("✓ Фильм отмечен как просмотренный", false);
-                }
-
-                UpdateWatchedButton();
-                UpdateWatchListButton();
-                // FavoriteButton не меняем - избранное независимо
-            }
-            catch (Exception ex)
-            {
-                ShowStatusMessage($"✗ Ошибка: {ex.Message}", true);
-            }
-        }
-
-        private void LoadWatchListStatus()
-        {
-            if (_currentUserId > 0)
-            {
-                _isInWatchList = _databaseService.IsInWatchList(_currentUserId, _movie.Slug);
-
-                if (_isWatched && _isInWatchList)
-                {
-                    _databaseService.RemoveFromWatchList(_currentUserId, _movie.Slug);
-                    _isInWatchList = false;
-                }
-
-                UpdateWatchListButton();
-            }
-            else
-            {
-                WatchListButton.IsEnabled = false;
-                WatchListButton.ToolTip = "Для добавления в список 'Хочу посмотреть' необходимо войти в систему";
-            }
-        }
-
-        private void UpdateWatchListButton()
-        {
-            if (_isWatched && _isInWatchList)
-            {
-                WatchListButton.Content = "Хочу пересмотреть ✓";
-                WatchListButton.Background = Brushes.LightCoral;
-                WatchListStatusText.Text = "Хотите пересмотреть этот фильм";
-                WatchListStatusText.Foreground = Brushes.Red;
-            }
-            else if (_isInWatchList)
-            {
-                WatchListButton.Content = "В списке 'Хочу посмотреть' ✓";
-                WatchListButton.Background = Brushes.LightYellow;
-                WatchListStatusText.Text = "Фильм добавлен в список 'Хочу посмотреть'";
-                WatchListStatusText.Foreground = Brushes.Orange;
-            }
-            else if (_isWatched)
-            {
-                WatchListButton.Content = "Хочу пересмотреть";
-                WatchListButton.Background = Brushes.LightBlue;
-                WatchListStatusText.Text = "Добавить для повторного просмотра";
-                WatchListStatusText.Foreground = Brushes.Blue;
-            }
-            else
-            {
-                WatchListButton.Content = "Хочу посмотреть";
-                WatchListButton.Background = Brushes.LightYellow;
-                WatchListStatusText.Text = "";
-            }
-        }
-
-        private void WatchListButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentUserId <= 0)
-            {
-                ShowStatusMessage("Для добавления в список 'Хочу посмотреть' необходимо войти в систему", true);
-                return;
-            }
-
-            try
-            {
-                if (_isInWatchList)
-                {
-                    _databaseService.RemoveFromWatchList(_currentUserId, _movie.Slug);
-                    _isInWatchList = false;
-                    ShowStatusMessage("✓ Фильм удален из списка", false);
-                }
-                else
-                {
-                    _databaseService.AddToWatchList(_currentUserId, _movie.Slug);
-                    _isInWatchList = true;
-                    ShowStatusMessage("✓ Фильм добавлен в список", false);
-                }
-
-                UpdateWatchListButton();
-            }
-            catch (Exception ex)
-            {
-                ShowStatusMessage($"✗ Ошибка: {ex.Message}", true);
-            }
-        }
-
-        private void LoadFavoriteStatus()
-        {
-            if (_currentUserId > 0)
-            {
-                _isFavorite = _databaseService.IsInFavorites(_currentUserId, _movie.Slug);
-                UpdateFavoriteButton();
-            }
-            else
-            {
-                FavoriteButton.IsEnabled = false;
-                FavoriteButton.ToolTip = "Для добавления в избранное необходимо войти в систему";
-            }
-        }
-
-        private void UpdateFavoriteButton()
-        {
-            if (_isFavorite)
-            {
-                FavoriteButton.Content = "❤️ В избранном";
-                FavoriteButton.Background = Brushes.LightCoral;
-                FavoriteStatusText.Text = "Фильм в избранном";
-                FavoriteStatusText.Foreground = Brushes.Red;
-            }
-            else
-            {
-                FavoriteButton.Content = "❤️ В избранное";
-                FavoriteButton.Background = Brushes.LightPink;
-                FavoriteStatusText.Text = "";
-            }
-        }
-
-        private void FavoriteButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentUserId <= 0)
-            {
-                ShowStatusMessage("Для добавления в избранное необходимо войти в систему", true);
-                return;
-            }
-
-            try
-            {
-                if (_isFavorite)
-                {
-                    _databaseService.RemoveFromFavorites(_currentUserId, _movie.Slug);
-                    _isFavorite = false;
-                    ShowStatusMessage("✓ Фильм удален из избранного", false);
-                }
-                else
-                {
-                    _databaseService.AddToFavorites(_currentUserId, _movie.Slug);
-                    _isFavorite = true;
-                    ShowStatusMessage("✓ Фильм добавлен в избранное", false);
-                }
-
-                UpdateFavoriteButton();
-            }
-            catch (Exception ex)
-            {
-                ShowStatusMessage($"✗ Ошибка: {ex.Message}", true);
-            }
+                ReviewsListPanel.Children.Remove(statusBar);
+                timer.Stop();
+            };
+            timer.Start();
         }
     }
 }
