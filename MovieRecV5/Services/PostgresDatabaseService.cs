@@ -1737,5 +1737,239 @@ namespace MovieRecV5.Services
 
             return movies;
         }
+
+        // В класс PostgresDatabaseService добавьте:
+
+        public List<string> GetAllGenres()
+        {
+            var genres = new HashSet<string>();
+
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    var command = new NpgsqlCommand(
+                        "SELECT DISTINCT genres FROM movies WHERE genres IS NOT NULL AND genres != '[]'",
+                        connection);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            string genresJson = reader["genres"]?.ToString();
+                            if (!string.IsNullOrEmpty(genresJson))
+                            {
+                                try
+                                {
+                                    var movieGenres = Newtonsoft.Json.JsonConvert.DeserializeObject<List<string>>(genresJson);
+                                    foreach (var genre in movieGenres)
+                                    {
+                                        genres.Add(genre);
+                                    }
+                                }
+                                catch { }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка получения жанров: {ex.Message}");
+            }
+
+            return genres.OrderBy(g => g).ToList();
+        }
+
+        public List<int> GetAllYears()
+        {
+            var years = new List<int>();
+
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    var command = new NpgsqlCommand(
+                        "SELECT DISTINCT year FROM movies WHERE year > 1900 ORDER BY year DESC",
+                        connection);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            if (reader["year"] != DBNull.Value)
+                            {
+                                years.Add(Convert.ToInt32(reader["year"]));
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка получения годов: {ex.Message}");
+            }
+
+            return years;
+        }
+
+        public List<Movie> GetFilteredMovies(MovieFilters filters, int userId = 0)
+        {
+            var movies = new List<Movie>();
+
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    var queryBuilder = new System.Text.StringBuilder();
+                    queryBuilder.AppendLine("SELECT m.* FROM movies m");
+
+                    // Добавляем JOIN для пользовательских фильтров
+                    if (filters.OnlyWatched && userId > 0)
+                    {
+                        queryBuilder.AppendLine("INNER JOIN watched_movies wm ON m.slug = wm.movie_slug AND wm.user_id = @userId");
+                    }
+                    else if (filters.OnlyWatchList && userId > 0)
+                    {
+                        queryBuilder.AppendLine("INNER JOIN watch_list wl ON m.slug = wl.movie_slug AND wl.user_id = @userId");
+                    }
+                    else if (filters.OnlyFavorites && userId > 0)
+                    {
+                        queryBuilder.AppendLine("INNER JOIN favorites f ON m.slug = f.movie_slug AND f.user_id = @userId");
+                    }
+                    else if (userId > 0 && (filters.OnlyWatched || filters.OnlyWatchList || filters.OnlyFavorites))
+                    {
+                        // Если нужно, но userId = 0, пропускаем
+                    }
+
+                    queryBuilder.AppendLine("WHERE 1=1");
+
+                    // Поиск по тексту
+                    if (!string.IsNullOrEmpty(filters.SearchQuery))
+                    {
+                        queryBuilder.AppendLine("AND (LOWER(m.title) LIKE @searchQuery OR LOWER(m.slug) LIKE @slugPattern)");
+                    }
+
+                    // Фильтр по годам
+                    if (filters.YearFrom.HasValue)
+                    {
+                        queryBuilder.AppendLine("AND m.year >= @yearFrom");
+                    }
+                    if (filters.YearTo.HasValue)
+                    {
+                        queryBuilder.AppendLine("AND m.year <= @yearTo");
+                    }
+
+                    // Фильтр по рейтингу
+                    if (filters.RatingFrom.HasValue)
+                    {
+                        queryBuilder.AppendLine("AND m.rating >= @ratingFrom");
+                    }
+                    if (filters.RatingTo.HasValue)
+                    {
+                        queryBuilder.AppendLine("AND m.rating <= @ratingTo");
+                    }
+
+                    // Фильтр по количеству оценок
+                    if (filters.VotesFrom.HasValue)
+                    {
+                        queryBuilder.AppendLine("AND m.vote_count >= @votesFrom");
+                    }
+
+                    // Только с постером
+                    if (filters.OnlyWithPoster)
+                    {
+                        queryBuilder.AppendLine("AND m.poster IS NOT NULL AND m.poster != 'null'");
+                    }
+
+                    // Сортировка
+                    queryBuilder.AppendLine("ORDER BY");
+                    switch (filters.SortBy)
+                    {
+                        case "rating":
+                            queryBuilder.AppendLine("m.rating");
+                            break;
+                        case "year":
+                            queryBuilder.AppendLine("m.year");
+                            break;
+                        case "title":
+                            queryBuilder.AppendLine("m.title");
+                            break;
+                        case "votes":
+                            queryBuilder.AppendLine("m.vote_count");
+                            break;
+                        default:
+                            queryBuilder.AppendLine("m.vote_count DESC, m.rating");
+                            break;
+                    }
+
+                    if (filters.SortDescending && filters.SortBy != "popularity")
+                    {
+                        queryBuilder.AppendLine("DESC");
+                    }
+
+                    queryBuilder.AppendLine("LIMIT 200");
+
+                    var command = new NpgsqlCommand(queryBuilder.ToString(), connection);
+
+                    // Добавляем параметры
+                    if (userId > 0)
+                    {
+                        command.Parameters.AddWithValue("@userId", userId);
+                    }
+
+                    if (!string.IsNullOrEmpty(filters.SearchQuery))
+                    {
+                        var searchTerm = filters.SearchQuery.ToLower();
+                        command.Parameters.AddWithValue("@searchQuery", $"%{searchTerm}%");
+                        command.Parameters.AddWithValue("@slugPattern", $"%{searchTerm.Replace(" ", "-")}%");
+                    }
+
+                    if (filters.YearFrom.HasValue)
+                        command.Parameters.AddWithValue("@yearFrom", filters.YearFrom.Value);
+                    if (filters.YearTo.HasValue)
+                        command.Parameters.AddWithValue("@yearTo", filters.YearTo.Value);
+                    if (filters.RatingFrom.HasValue)
+                        command.Parameters.AddWithValue("@ratingFrom", filters.RatingFrom.Value);
+                    if (filters.RatingTo.HasValue)
+                        command.Parameters.AddWithValue("@ratingTo", filters.RatingTo.Value);
+                    if (filters.VotesFrom.HasValue)
+                        command.Parameters.AddWithValue("@votesFrom", filters.VotesFrom.Value);
+
+                    // Жанровый фильтр (обрабатываем отдельно)
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var movie = CreateMovieFromReader(reader, userId);
+
+                            // Фильтруем по жанрам после загрузки
+                            if (filters.SelectedGenres.Count > 0)
+                            {
+                                bool hasAllGenres = filters.SelectedGenres.All(g =>
+                                    movie.Genres.Any(mg => mg.Equals(g, StringComparison.OrdinalIgnoreCase)));
+
+                                if (!hasAllGenres)
+                                    continue;
+                            }
+
+                            movies.Add(movie);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка фильтрации фильмов: {ex.Message}");
+            }
+
+            return movies;
+        }
     }
 }

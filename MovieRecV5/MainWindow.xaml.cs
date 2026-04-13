@@ -22,6 +22,7 @@ namespace MovieRecV5
         private TmdbParser _tmdbParser;
         private Dictionary<string, Tuple<DateTime, List<Movie>>> _searchCache = new Dictionary<string, Tuple<DateTime, List<Movie>>>();
         private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(5);
+        private MovieFilters _currentFilters = new MovieFilters();
 
         public bool IsLogged { get; private set; }
         public User CurrentUser { get; private set; }
@@ -78,15 +79,20 @@ namespace MovieRecV5
         {
             try
             {
-                SetProgressStatus(true);
-                SearchProgressBar.IsIndeterminate = true;
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    SetProgressStatus(true);
+                    SearchProgressBar.IsIndeterminate = true;
+                });
 
                 int userId = CurrentUser?.Id ?? 0;
                 List<Movie> popularMovies = new List<Movie>();
 
                 Console.WriteLine("🌐 Загружаем популярные фильмы из TMDB API...");
 
-                popularMovies = await _tmdbParser.GetPopularMoviesAsync(1, 50, 30);
+                // Загружаем данные в фоновом потоке
+                popularMovies = await Task.Run(async () =>
+                    await _tmdbParser.GetPopularMoviesAsync(1, 50, 30));
 
                 Console.WriteLine($"✅ Загружено {popularMovies.Count} популярных фильмов из TMDB");
 
@@ -94,18 +100,22 @@ namespace MovieRecV5
                 {
                     try
                     {
-                        if (!_databaseService.MovieExists(movie.Slug))
+                        // Проверяем существование в БД в фоновом потоке
+                        await Task.Run(() =>
                         {
-                            _databaseService.AddMovie(movie);
-                            Console.WriteLine($"📁 Сохранен в БД: {movie.Title} ({movie.Year})");
-                        }
+                            if (!_databaseService.MovieExists(movie.Slug))
+                            {
+                                _databaseService.AddMovie(movie);
+                                Console.WriteLine($"📁 Сохранен в БД: {movie.Title} ({movie.Year})");
+                            }
 
-                        if (userId > 0)
-                        {
-                            movie.IsWatched = _databaseService.IsMovieWatched(userId, movie.Slug);
-                            movie.InWatchList = _databaseService.IsInWatchList(userId, movie.Slug);
-                            movie.IsFavorite = _databaseService.IsInFavorites(userId, movie.Slug);
-                        }
+                            if (userId > 0)
+                            {
+                                movie.IsWatched = _databaseService.IsMovieWatched(userId, movie.Slug);
+                                movie.InWatchList = _databaseService.IsInWatchList(userId, movie.Slug);
+                                movie.IsFavorite = _databaseService.IsInFavorites(userId, movie.Slug);
+                            }
+                        });
                     }
                     catch (Exception ex)
                     {
@@ -115,52 +125,61 @@ namespace MovieRecV5
                     await Task.Delay(50);
                 }
 
-                if (popularMovies.Any())
+                // Обновляем UI в основном потоке
+                await Dispatcher.InvokeAsync(() =>
                 {
-                    SearchProgressBar.Value = 100;
-                    DisplayMovies(popularMovies);
-
-                    SearchTextBox.Text = "Введите название...";
-                    SearchTextBox.Foreground = Brushes.Gray;
-                }
-                else
-                {
-                    MoviesPanel.Children.Clear();
-                    var noMoviesText = new TextBlock
+                    if (popularMovies.Any())
                     {
-                        Text = "Не удалось загрузить популярные фильмы из TMDB.\nПопробуйте выполнить поиск.",
-                        HorizontalAlignment = HorizontalAlignment.Center,
-                        VerticalAlignment = VerticalAlignment.Center,
-                        FontSize = 14,
-                        Foreground = Brushes.Gray,
-                        TextAlignment = TextAlignment.Center,
-                        Margin = new Thickness(20)
-                    };
-                    MoviesPanel.Children.Add(noMoviesText);
-                }
+                        SearchProgressBar.Value = 100;
+                        DisplayMovies(popularMovies);
+
+                        SearchTextBox.Text = "Введите название...";
+                        SearchTextBox.Foreground = Brushes.Gray;
+                    }
+                    else
+                    {
+                        MoviesPanel.Children.Clear();
+                        var noMoviesText = new TextBlock
+                        {
+                            Text = "Не удалось загрузить популярные фильмы из TMDB.\nПопробуйте выполнить поиск.",
+                            HorizontalAlignment = HorizontalAlignment.Center,
+                            VerticalAlignment = VerticalAlignment.Center,
+                            FontSize = 14,
+                            Foreground = Brushes.Gray,
+                            TextAlignment = TextAlignment.Center,
+                            Margin = new Thickness(20)
+                        };
+                        MoviesPanel.Children.Add(noMoviesText);
+                    }
+
+                    SetProgressStatus(false);
+                    SearchProgressBar.IsIndeterminate = false;
+                    SearchProgressBar.Value = 0;
+                });
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Ошибка при загрузке популярных фильмов: {ex.Message}");
 
-                MoviesPanel.Children.Clear();
-                var errorText = new TextBlock
+                await Dispatcher.InvokeAsync(() =>
                 {
-                    Text = $"Ошибка загрузки популярных фильмов из TMDB.\n{ex.Message}\n\nПопробуйте выполнить поиск.",
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center,
-                    FontSize = 14,
-                    Foreground = Brushes.Red,
-                    TextAlignment = TextAlignment.Center,
-                    Margin = new Thickness(20)
-                };
-                MoviesPanel.Children.Add(errorText);
-            }
-            finally
-            {
-                SetProgressStatus(false);
-                SearchProgressBar.IsIndeterminate = false;
-                SearchProgressBar.Value = 0;
+                    MoviesPanel.Children.Clear();
+                    var errorText = new TextBlock
+                    {
+                        Text = $"Ошибка загрузки популярных фильмов из TMDB.\n{ex.Message}\n\nПопробуйте выполнить поиск.",
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        FontSize = 14,
+                        Foreground = Brushes.Red,
+                        TextAlignment = TextAlignment.Center,
+                        Margin = new Thickness(20)
+                    };
+                    MoviesPanel.Children.Add(errorText);
+
+                    SetProgressStatus(false);
+                    SearchProgressBar.IsIndeterminate = false;
+                    SearchProgressBar.Value = 0;
+                });
             }
         }
 
@@ -170,32 +189,100 @@ namespace MovieRecV5
         {
             try
             {
-                SetProgressStatus(true);
-                SearchProgressBar.IsIndeterminate = true;
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    SetProgressStatus(true);
+                    SearchProgressBar.IsIndeterminate = true;
+                });
 
                 if (SearchTextBox.Text == "Введите название..." || string.IsNullOrWhiteSpace(SearchTextBox.Text))
                 {
-                    await LoadPopularMoviesAsync();
+                    // Если есть активные фильтры, применяем их
+                    if (_currentFilters.HasActiveFilters())
+                    {
+                        _currentFilters.SearchQuery = "";
+                        await ApplyFiltersAsync();
+                    }
+                    else
+                    {
+                        await LoadPopularMoviesAsync();
+                    }
                     return;
                 }
 
                 string searchTitle = SearchTextBox.Text.Trim();
-                Console.WriteLine($"🔍 Поиск: '{searchTitle}'");
 
-                var results = await GetSearchResultsWithCache(searchTitle, CurrentUser?.Id ?? 0);
+                // Если есть фильтры, используем фильтрованный поиск
+                if (_currentFilters.HasActiveFilters())
+                {
+                    _currentFilters.SearchQuery = searchTitle;
+                    await ApplyFiltersAsync();
+                }
+                else
+                {
+                    // Обычный поиск
+                    var results = await GetSearchResultsWithCache(searchTitle, CurrentUser?.Id ?? 0);
 
-                SearchProgressBar.Value = 100;
-                DisplayMovies(results);
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        SearchProgressBar.Value = 100;
+                        DisplayMovies(results);
+                        SetProgressStatus(false);
+                        SearchProgressBar.IsIndeterminate = false;
+                        SearchProgressBar.Value = 0;
+                    });
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка: {ex.Message}");
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    MessageBox.Show($"Ошибка: {ex.Message}");
+                    SetProgressStatus(false);
+                    SearchProgressBar.IsIndeterminate = false;
+                    SearchProgressBar.Value = 0;
+                });
             }
-            finally
+        }
+
+        // Добавьте новый метод для асинхронного применения фильтров
+        private async Task ApplyFiltersAsync()
+        {
+            try
             {
-                SetProgressStatus(false);
-                SearchProgressBar.IsIndeterminate = false;
-                SearchProgressBar.Value = 0;
+                // Выполняем фильтрацию в фоновом потоке
+                var filteredMovies = await Task.Run(() =>
+                    _databaseService.GetFilteredMovies(_currentFilters, CurrentUser?.Id ?? 0));
+
+                // Обновляем UI в основном потоке
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    SearchProgressBar.Value = 100;
+                    DisplayMovies(filteredMovies);
+
+                    // Показываем информацию о фильтрации
+                    if (_currentFilters.HasActiveFilters())
+                    {
+                        SearchTextBox.Text = $"🔍 Найдено: {filteredMovies.Count} фильмов";
+                        SearchTextBox.Foreground = new SolidColorBrush(Color.FromRgb(108, 92, 231));
+                    }
+
+                    SetProgressStatus(false);
+                    SearchProgressBar.IsIndeterminate = false;
+                    SearchProgressBar.Value = 0;
+                });
+            }
+            catch (Exception ex)
+            {
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    MessageBox.Show($"Ошибка применения фильтров: {ex.Message}", "Ошибка",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+
+                    SetProgressStatus(false);
+                    SearchProgressBar.IsIndeterminate = false;
+                    SearchProgressBar.Value = 0;
+                });
             }
         }
 
@@ -605,16 +692,16 @@ namespace MovieRecV5
             }
         }
 
-        private void RefreshCurrentDisplay()
+        private async void RefreshCurrentDisplay()
         {
             if (!string.IsNullOrWhiteSpace(SearchTextBox.Text) &&
                 SearchTextBox.Text != "Введите название...")
             {
-                SearchButton_Click(null, null);
+                await Dispatcher.InvokeAsync(() => SearchButton_Click(null, null));
             }
             else
             {
-                _ = LoadPopularMoviesAsync();
+                await LoadPopularMoviesAsync();
             }
         }
 
@@ -669,6 +756,12 @@ namespace MovieRecV5
             CurrentUser = null;
             IsLogged = false;
             UpdateUserButton();
+
+            // Сбрасываем пользовательские фильтры
+            _currentFilters.OnlyWatched = false;
+            _currentFilters.OnlyWatchList = false;
+            _currentFilters.OnlyFavorites = false;
+            UpdateFiltersIndicator();
 
             SearchTextBox.Text = "Введите название...";
             SearchTextBox.Foreground = Brushes.Gray;
@@ -856,6 +949,95 @@ namespace MovieRecV5
             // Этот метод нужен для обновления плейсхолдера через триггеры
             // Тело метода может быть пустым, но метод должен существовать
             // чтобы TextChanged событие работало
+        }
+
+        private async void FiltersButton_Click(object sender, RoutedEventArgs e)
+        {
+            var filtersWindow = new ViewModels.FiltersWindow(_currentFilters, CurrentUser?.Id ?? 0)
+            {
+                Owner = this
+            };
+
+            if (filtersWindow.ShowDialog() == true)
+            {
+                _currentFilters = filtersWindow.Filters;
+                UpdateFiltersIndicator();
+                await ApplyFiltersAsync();
+            }
+        }
+
+        private void UpdateFiltersIndicator()
+        {
+            FiltersActiveIndicator.Visibility = _currentFilters.HasActiveFilters()
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
+            if (_currentFilters.HasActiveFilters())
+            {
+                int activeCount = 0;
+                if (_currentFilters.SelectedGenres.Count > 0) activeCount++;
+                if (_currentFilters.YearFrom.HasValue || _currentFilters.YearTo.HasValue) activeCount++;
+                if (_currentFilters.RatingFrom.HasValue || _currentFilters.RatingTo.HasValue) activeCount++;
+                if (_currentFilters.OnlyWatched) activeCount++;
+                if (_currentFilters.OnlyWatchList) activeCount++;
+                if (_currentFilters.OnlyFavorites) activeCount++;
+
+                FiltersActiveIndicator.ToolTip = $"Применено фильтров: {activeCount}";
+            }
+        }
+
+        private async void ApplyFilters()
+        {
+            try
+            {
+                SetProgressStatus(true);
+                SearchProgressBar.IsIndeterminate = true;
+
+                // Используем поисковый запрос из текстового поля
+                if (!string.IsNullOrWhiteSpace(SearchTextBox.Text) &&
+                    SearchTextBox.Text != "Введите название...")
+                {
+                    _currentFilters.SearchQuery = SearchTextBox.Text.Trim();
+                }
+                else
+                {
+                    _currentFilters.SearchQuery = "";
+                }
+
+                // Выполняем фильтрацию в фоновом потоке
+                var filteredMovies = await Task.Run(() =>
+                    _databaseService.GetFilteredMovies(_currentFilters, CurrentUser?.Id ?? 0));
+
+                // Обновляем UI в основном потоке
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    SearchProgressBar.Value = 100;
+                    DisplayMovies(filteredMovies);
+
+                    // Показываем информацию о фильтрации
+                    if (_currentFilters.HasActiveFilters())
+                    {
+                        SearchTextBox.Text = $"🔍 Найдено: {filteredMovies.Count} фильмов";
+                        SearchTextBox.Foreground = new SolidColorBrush(Color.FromRgb(108, 92, 231));
+                    }
+
+                    SetProgressStatus(false);
+                    SearchProgressBar.IsIndeterminate = false;
+                    SearchProgressBar.Value = 0;
+                });
+            }
+            catch (Exception ex)
+            {
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    MessageBox.Show($"Ошибка применения фильтров: {ex.Message}", "Ошибка",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+
+                    SetProgressStatus(false);
+                    SearchProgressBar.IsIndeterminate = false;
+                    SearchProgressBar.Value = 0;
+                });
+            }
         }
     }
 }

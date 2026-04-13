@@ -137,6 +137,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Models\MovieFilters.cs" />
     <Compile Include="Models\Review.cs" />
     <Compile Include="Services\PostgresDatabaseService.cs" />
     <Compile Include="Services\SettingsManager.cs" />
@@ -145,6 +146,9 @@
     </Compile>
     <Compile Include="ViewModels\FavoritesWindow.xaml.cs">
       <DependentUpon>FavoritesWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ViewModels\FiltersWindow.xaml.cs">
+      <DependentUpon>FiltersWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="ViewModels\Login.xaml.cs">
       <DependentUpon>Login.xaml</DependentUpon>
@@ -168,6 +172,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="ViewModels\FavoritesWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ViewModels\FiltersWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

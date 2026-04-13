@@ -232,6 +232,15 @@
                 <StackPanel Grid.Column="2" 
                             Orientation="Horizontal"
                             VerticalAlignment="Center">
+                    
+                    <Button Name="FiltersButton" 
+                            Style="{StaticResource ModernButton}"
+                            Content="🔍 Фильтры"
+                            Click="FiltersButton_Click"
+                            Width="110"
+                            Height="40"
+                            Margin="0,0,10,0"
+                            Background="#404040"/>
 
                     <!-- Прогресс бар -->
                     <ProgressBar Name="SearchProgressBar" 
@@ -243,6 +252,16 @@
                                  BorderThickness="0"
                                  Visibility="Collapsed"
                                  IsIndeterminate="False"/>
+
+                    <!-- После прогресс-бара -->
+                    <TextBlock Name="FiltersActiveIndicator" 
+                                Text="🔴"
+                                FontSize="12"
+                                Foreground="#6C5CE7"
+                                Margin="0,0,10,0"
+                                Visibility="Collapsed"
+                                ToolTip="Применены фильтры"
+                                VerticalAlignment="Center"/>
 
                     <!-- Кнопка рекомендаций -->
                     <Button Name="RecommendationsButton" 
