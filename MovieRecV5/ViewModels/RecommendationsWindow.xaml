@@ -6,19 +6,19 @@
         Width="1100"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResizeWithGrip"
-        Background="#0F0F0F"
+        Background="#0A0E1A"
         Foreground="White"
         FontFamily="Segoe UI">
 
     <Window.Resources>
         <LinearGradientBrush x:Key="RecommendationsGradient" StartPoint="0,0" EndPoint="1,0">
-            <GradientStop Color="#6C5CE7" Offset="0"/>
-            <GradientStop Color="#00B894" Offset="1"/>
+            <GradientStop Color="#3B82F6" Offset="0"/>
+            <GradientStop Color="#06B6D4" Offset="1"/>
         </LinearGradientBrush>
 
         <Style x:Key="ProgressBarStyle" TargetType="ProgressBar">
-            <Setter Property="Background" Value="#2D2D2D"/>
-            <Setter Property="Foreground" Value="#6C5CE7"/>
+            <Setter Property="Background" Value="#1E293B"/>
+            <Setter Property="Foreground" Value="#3B82F6"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Height" Value="6"/>
             <Setter Property="Template">
@@ -81,7 +81,7 @@
                         x:Name="RefreshButton"
                         Content="🔄 Обновить"
                         Style="{StaticResource ActionButton}"
-                        Background="#00B894"
+                        Background="#06B6D4"
                         Width="120"
                         Height="35"
                         Click="RefreshButton_Click"
@@ -91,7 +91,7 @@
 
         <!-- Информация о рекомендациях -->
         <Border Grid.Row="1" 
-                Background="#1E1E1E" 
+                Background="#111827" 
                 Padding="15"
                 Margin="20,15,20,0"
                 CornerRadius="10">
@@ -100,7 +100,7 @@
                            Text="Анализируем ваши предпочтения..."
                            TextWrapping="Wrap"
                            FontSize="14"
-                           Foreground="#B0B0B0"/>
+                           Foreground="#94A3B8"/>
 
                 <!-- Прогресс-бар -->
                 <ProgressBar x:Name="LoadingProgressBar"
@@ -115,7 +115,7 @@
         <ScrollViewer Grid.Row="2" 
                       VerticalScrollBarVisibility="Auto" 
                       HorizontalScrollBarVisibility="Disabled"
-                      Background="#0F0F0F">
+                      Background="#0A0E1A">
             <WrapPanel x:Name="MoviesPanel" 
                       HorizontalAlignment="Center"
                       Margin="20"/>
@@ -124,9 +124,9 @@
         <!-- Сообщение при отсутствии рекомендаций -->
         <Grid Grid.Row="2" 
               x:Name="NoRecommendationsGrid" 
-              Background="#0F0F0F"
+              Background="#0A0E1A"
               Visibility="Collapsed">
-            <Border Background="#1E1E1E"
+            <Border Background="#111827"
                     CornerRadius="20"
                     Padding="40"
                     HorizontalAlignment="Center"
@@ -144,14 +144,14 @@
                     <TextBlock x:Name="NoRecommendationsText"
                                Text="Чтобы получить рекомендации, оцените несколько фильмов" 
                                FontSize="14" 
-                               Foreground="#B0B0B0"
+                               Foreground="#94A3B8"
                                HorizontalAlignment="Center"
                                TextAlignment="Center"
                                Margin="0,0,0,20"
                                MaxWidth="300"/>
                     <Button Content="⭐ Оценить фильмы"
                             Style="{StaticResource ActionButton}"
-                            Background="#6C5CE7"
+                            Background="#3B82F6"
                             Click="RateMoviesButton_Click"
                             Width="160"
                             Height="40"
@@ -162,12 +162,12 @@
 
         <!-- Статус -->
         <Border Grid.Row="3" 
-                Background="#1E1E1E" 
+                Background="#111827" 
                 Padding="10">
             <TextBlock x:Name="StatusText"
                        Text="Готово"
                        FontSize="12"
-                       Foreground="#B0B0B0"
+                       Foreground="#94A3B8"
                        VerticalAlignment="Center"/>
         </Border>
     </Grid>

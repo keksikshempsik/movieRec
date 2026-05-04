@@ -6,13 +6,13 @@
         Width="1000"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResizeWithGrip"
-        Background="#0F0F0F"
+        Background="#0A0E1A"
         Foreground="White"
         FontFamily="Segoe UI">
 
     <Window.Resources>
         <LinearGradientBrush x:Key="WatchlistGradient" StartPoint="0,0" EndPoint="1,0">
-            <GradientStop Color="#6C5CE7" Offset="0"/>
+            <GradientStop Color="#3B82F6" Offset="0"/>
             <GradientStop Color="#FDCB6E" Offset="1"/>
         </LinearGradientBrush>
     </Window.Resources>
@@ -60,7 +60,7 @@
         <ScrollViewer Grid.Row="1" 
                       VerticalScrollBarVisibility="Auto" 
                       HorizontalScrollBarVisibility="Disabled"
-                      Background="#0F0F0F">
+                      Background="#0A0E1A">
             <WrapPanel x:Name="MoviesPanel" 
                       HorizontalAlignment="Center"
                       Margin="20"/>
@@ -68,9 +68,9 @@
 
         <!-- Текст при отсутствии фильмов -->
         <Grid Grid.Row="1" x:Name="NoMoviesGrid" 
-              Background="#0F0F0F"
+              Background="#0A0E1A"
               Visibility="Collapsed">
-            <Border Background="#1E1E1E"
+            <Border Background="#111827"
                     CornerRadius="20"
                     Padding="40"
                     HorizontalAlignment="Center"
@@ -87,7 +87,7 @@
                                Margin="0,0,0,10"/>
                     <TextBlock Text="Добавляйте фильмы, нажимая на кнопку 'Хочу посмотреть'" 
                                FontSize="14" 
-                               Foreground="#B0B0B0"
+                               Foreground="#94A3B8"
                                HorizontalAlignment="Center"
                                TextAlignment="Center"
                                Margin="0,0,0,20"

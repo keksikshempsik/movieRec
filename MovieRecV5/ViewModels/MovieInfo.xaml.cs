@@ -167,14 +167,14 @@ namespace MovieRecV5.ViewModels
             if (_isWatched)
             {
                 WatchedButton.Content = "✓ Просмотрено";
-                WatchedButton.Background = new SolidColorBrush(Color.FromRgb(0, 184, 148)); // #00B894
+                WatchedButton.Background = new SolidColorBrush(Color.FromRgb(6, 182, 212)); // #06B6D4
                 WatchedStatusText.Text = "Фильм отмечен как просмотренный";
-                WatchedStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0, 184, 148));
+                WatchedStatusText.Foreground = new SolidColorBrush(Color.FromRgb(6, 182, 212));
             }
             else
             {
                 WatchedButton.Content = "Отметить как просмотренный";
-                WatchedButton.Background = new SolidColorBrush(Color.FromRgb(108, 92, 231)); // #6C5CE7
+                WatchedButton.Background = new SolidColorBrush(Color.FromRgb(59, 130, 246)); // #3B82F6
                 WatchedStatusText.Text = "";
             }
         }
@@ -407,7 +407,7 @@ namespace MovieRecV5.ViewModels
                 }
                 else
                 {
-                    starButtons[i].Foreground = new SolidColorBrush(Color.FromRgb(176, 176, 176)); // Light gray
+                    starButtons[i].Foreground = new SolidColorBrush(Color.FromRgb(148, 163, 184)); // #94A3B8
                     starButtons[i].Content = "★";
                 }
             }
@@ -677,8 +677,8 @@ namespace MovieRecV5.ViewModels
         {
             var border = new Border
             {
-                Background = new SolidColorBrush(Color.FromRgb(30, 30, 30)),
-                BorderBrush = new SolidColorBrush(Color.FromRgb(64, 64, 64)),
+                Background = new SolidColorBrush(Color.FromRgb(17, 24, 39)),
+                BorderBrush = new SolidColorBrush(Color.FromRgb(51, 65, 85)),
                 BorderThickness = new Thickness(1),
                 Margin = new Thickness(0, 0, 0, 10),
                 Padding = new Thickness(12),
@@ -695,7 +695,7 @@ namespace MovieRecV5.ViewModels
             {
                 Width = 28,
                 Height = 28,
-                Background = new SolidColorBrush(Color.FromRgb(108, 92, 231)),
+                Background = new SolidColorBrush(Color.FromRgb(59, 130, 246)),
                 CornerRadius = new CornerRadius(14),
                 Margin = new Thickness(0, 0, 8, 0)
             };
@@ -728,7 +728,7 @@ namespace MovieRecV5.ViewModels
             {
                 Text = FormatReviewDate(review.UpdatedAt),
                 FontSize = 10,
-                Foreground = new SolidColorBrush(Color.FromRgb(176, 176, 176))
+                Foreground = new SolidColorBrush(Color.FromRgb(148, 163, 184))
             };
             nameDatePanel.Children.Add(dateText);
 
@@ -756,7 +756,7 @@ namespace MovieRecV5.ViewModels
                     Height = 28,
                     Width = 100,
                     HorizontalAlignment = HorizontalAlignment.Right,
-                    Background = new SolidColorBrush(Color.FromRgb(108, 92, 231)),
+                    Background = new SolidColorBrush(Color.FromRgb(59, 130, 246)),
                     Foreground = Brushes.White,
                     BorderThickness = new Thickness(0),
                     Cursor = Cursors.Hand,
@@ -831,7 +831,7 @@ namespace MovieRecV5.ViewModels
         {
             var statusBar = new Border
             {
-                Background = isError ? new SolidColorBrush(Color.FromRgb(214, 48, 49)) : new SolidColorBrush(Color.FromRgb(0, 184, 148)),
+                Background = isError ? new SolidColorBrush(Color.FromRgb(214, 48, 49)) : new SolidColorBrush(Color.FromRgb(6, 182, 212)),
                 Padding = new Thickness(8),
                 Margin = new Thickness(0, 5, 0, 0),
                 CornerRadius = new CornerRadius(4),

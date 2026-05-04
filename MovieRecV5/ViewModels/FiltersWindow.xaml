@@ -6,13 +6,13 @@
         Width="450"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Background="#1E1E1E">
+        Background="#111827">
 
     <Window.Resources>
-        <SolidColorBrush x:Key="PrimaryColor" Color="#6C5CE7"/>
-        <SolidColorBrush x:Key="SurfaceColor" Color="#2D2D2D"/>
+        <SolidColorBrush x:Key="PrimaryColor" Color="#3B82F6"/>
+        <SolidColorBrush x:Key="SurfaceColor" Color="#1E293B"/>
         <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="TextSecondary" Color="#B0B0B0"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="#94A3B8"/>
 
         <Style x:Key="FilterButton" TargetType="Button">
             <Setter Property="Background" Value="{StaticResource PrimaryColor}"/>
@@ -41,9 +41,9 @@
         </Style>
 
         <Style x:Key="FilterTextBox" TargetType="TextBox">
-            <Setter Property="Background" Value="#2D2D2D"/>
+            <Setter Property="Background" Value="#1E293B"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="#404040"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Height" Value="35"/>
             <Setter Property="Padding" Value="10,5"/>
@@ -84,12 +84,12 @@
                 <!-- Сортировка -->
                 <GroupBox Header="📊 Сортировка" 
                           Foreground="{StaticResource TextPrimary}"
-                          BorderBrush="#404040"
+                          BorderBrush="#334155"
                           Margin="0,0,0,15">
                     <StackPanel Margin="10">
                         <ComboBox x:Name="SortByComboBox" 
                                   Height="35"
-                                  Background="#2D2D2D"
+                                  Background="#1E293B"
                                   Foreground="White"
                                   Margin="0,0,0,10">
                             <ComboBoxItem Content="По популярности" Tag="popularity" IsSelected="True"/>
@@ -110,7 +110,7 @@
                 <!-- Жанры -->
                 <GroupBox Header="🎭 Жанры" 
                           Foreground="{StaticResource TextPrimary}"
-                          BorderBrush="#404040"
+                          BorderBrush="#334155"
                           Margin="0,0,0,15">
                     <ScrollViewer MaxHeight="200" 
                                   VerticalScrollBarVisibility="Auto"
@@ -130,7 +130,7 @@
                 <!-- Год выпуска -->
                 <GroupBox Header="📅 Год выпуска" 
                           Foreground="{StaticResource TextPrimary}"
-                          BorderBrush="#404040"
+                          BorderBrush="#334155"
                           Margin="0,0,0,15">
                     <StackPanel Margin="10">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
@@ -153,7 +153,7 @@
 
                         <ComboBox x:Name="YearPresetsComboBox" 
                                   Height="35"
-                                  Background="#2D2D2D"
+                                  Background="#1E293B"
                                   Foreground="White"
                                   SelectionChanged="YearPresetsComboBox_SelectionChanged">
                             <ComboBoxItem Content="Все годы" Tag="all" IsSelected="True"/>
@@ -169,7 +169,7 @@
                 <!-- Рейтинг -->
                 <GroupBox Header="⭐ Рейтинг" 
                           Foreground="{StaticResource TextPrimary}"
-                          BorderBrush="#404040"
+                          BorderBrush="#334155"
                           Margin="0,0,0,15">
                     <StackPanel Margin="10">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
@@ -203,7 +203,7 @@
                 <!-- Дополнительные фильтры -->
                 <GroupBox Header="🔍 Дополнительно" 
                           Foreground="{StaticResource TextPrimary}"
-                          BorderBrush="#404040"
+                          BorderBrush="#334155"
                           Margin="0,0,0,15">
                     <StackPanel Margin="10">
                         <CheckBox x:Name="OnlyWatchedCheckBox" 
@@ -239,7 +239,7 @@
                     Margin="0,20,0,0">
             <Button Content="🔄 Сбросить" 
                     Style="{StaticResource FilterButton}"
-                    Background="#404040"
+                    Background="#334155"
                     Width="120"
                     Margin="0,0,10,0"
                     Click="ResetButton_Click"/>

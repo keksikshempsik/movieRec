@@ -264,7 +264,7 @@ namespace MovieRecV5
                     if (_currentFilters.HasActiveFilters())
                     {
                         SearchTextBox.Text = $"🔍 Найдено: {filteredMovies.Count} фильмов";
-                        SearchTextBox.Foreground = new SolidColorBrush(Color.FromRgb(108, 92, 231));
+                        SearchTextBox.Foreground = new SolidColorBrush(Color.FromRgb(59, 130, 246));
                     }
 
                     SetProgressStatus(false);
@@ -451,7 +451,7 @@ namespace MovieRecV5
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center,
                     FontSize = 16,
-                    Foreground = new SolidColorBrush(Color.FromRgb(176, 176, 176)),
+                    Foreground = new SolidColorBrush(Color.FromRgb(148, 163, 184)),
                     Margin = new Thickness(20)
                 };
                 MoviesPanel.Children.Add(noResultsText);
@@ -503,7 +503,7 @@ namespace MovieRecV5
 
             var border = new Border
             {
-                Background = new SolidColorBrush(Color.FromRgb(30, 30, 30)),
+                Background = new SolidColorBrush(Color.FromRgb(17, 24, 39)),
                 CornerRadius = new CornerRadius(15),
                 Padding = new Thickness(10)
             };
@@ -516,7 +516,7 @@ namespace MovieRecV5
                 Width = 160,
                 Height = 220,
                 CornerRadius = new CornerRadius(10),
-                Background = new SolidColorBrush(Color.FromRgb(45, 45, 45)),
+                Background = new SolidColorBrush(Color.FromRgb(30, 41, 59)),
                 Margin = new Thickness(0, 0, 0, 10)
             };
 
@@ -542,7 +542,7 @@ namespace MovieRecV5
             };
 
             if (isWatched)
-                statusPanel.Children.Add(CreateStatusBadge("✓", "#00B894"));
+                statusPanel.Children.Add(CreateStatusBadge("✓", "#06B6D4"));
             if (isInWatchList)
                 statusPanel.Children.Add(CreateStatusBadge("📋", "#FDCB6E"));
             if (isFavorite)
@@ -1018,7 +1018,7 @@ namespace MovieRecV5
                     if (_currentFilters.HasActiveFilters())
                     {
                         SearchTextBox.Text = $"🔍 Найдено: {filteredMovies.Count} фильмов";
-                        SearchTextBox.Foreground = new SolidColorBrush(Color.FromRgb(108, 92, 231));
+                        SearchTextBox.Foreground = new SolidColorBrush(Color.FromRgb(59, 130, 246));
                     }
 
                     SetProgressStatus(false);

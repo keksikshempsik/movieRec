@@ -6,12 +6,12 @@
         Width="450"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Background="#0F0F0F"
+        Background="#0A0E1A"
         Foreground="White"
         FontFamily="Segoe UI"
         WindowStyle="SingleBorderWindow">
 
-    <Border Background="#1E1E1E" CornerRadius="20" Margin="15">
+    <Border Background="#111827" CornerRadius="20" Margin="15">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="25">
                 <!-- Заголовок -->
@@ -45,14 +45,14 @@
                 <!-- Форма -->
                 <StackPanel>
                     <TextBlock Text="Логин" 
-                               Foreground="#B0B0B0"
+                               Foreground="#94A3B8"
                                Margin="0,0,0,5"/>
                     <TextBox x:Name="txtLogin" 
                             Style="{StaticResource ModernTextBox}"
                             Margin="0,0,0,15"/>
 
                     <TextBlock Text="Пароль" 
-                               Foreground="#B0B0B0"
+                               Foreground="#94A3B8"
                                Margin="0,0,0,5"/>
                     <PasswordBox x:Name="txtPassword" 
                                 Style="{StaticResource ModernPasswordBox}"
@@ -61,14 +61,14 @@
                     <!-- Дополнительные поля для регистрации -->
                     <StackPanel x:Name="pnlRegister" Visibility="Collapsed">
                         <TextBlock Text="Отображаемое имя" 
-                                   Foreground="#B0B0B0"
+                                   Foreground="#94A3B8"
                                    Margin="0,0,0,5"/>
                         <TextBox x:Name="txtDisplayName" 
                                 Style="{StaticResource ModernTextBox}"
                                 Margin="0,0,0,15"/>
 
                         <TextBlock Text="Email" 
-                                   Foreground="#B0B0B0"
+                                   Foreground="#94A3B8"
                                    Margin="0,0,0,5"/>
                         <TextBox x:Name="txtEmail" 
                                 Style="{StaticResource ModernTextBox}"

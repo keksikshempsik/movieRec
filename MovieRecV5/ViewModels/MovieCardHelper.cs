@@ -34,7 +34,7 @@ namespace MovieRecV5.ViewModels
             else if (isWatched)
                 cardBackground = new SolidColorBrush(Color.FromRgb(162, 222, 162)); // LightGreen
             else
-                cardBackground = new SolidColorBrush(Color.FromRgb(45, 45, 45)); // #2D2D2D
+                cardBackground = new SolidColorBrush(Color.FromRgb(30, 41, 59)); // #1E293B
 
             var button = new Button
             {
@@ -45,7 +45,7 @@ namespace MovieRecV5.ViewModels
 
             var border = new Border
             {
-                Background = new SolidColorBrush(Color.FromRgb(30, 30, 30)), // #1E1E1E
+                Background = new SolidColorBrush(Color.FromRgb(17, 24, 39)), // #111827
                 CornerRadius = new CornerRadius(12),
                 Padding = new Thickness(10)
             };
@@ -58,7 +58,7 @@ namespace MovieRecV5.ViewModels
                 Width = 160,
                 Height = 220,
                 CornerRadius = new CornerRadius(10),
-                Background = new SolidColorBrush(Color.FromRgb(45, 45, 45)), // #2D2D2D
+                Background = new SolidColorBrush(Color.FromRgb(30, 41, 59)), // #1E293B
                 Margin = new Thickness(0, 0, 0, 10)
             };
 
@@ -84,7 +84,7 @@ namespace MovieRecV5.ViewModels
             };
 
             if (isWatched)
-                statusPanel.Children.Add(CreateStatusBadge("✓", "#00B894"));
+                statusPanel.Children.Add(CreateStatusBadge("✓", "#06B6D4"));
             if (isInWatchList)
                 statusPanel.Children.Add(CreateStatusBadge("📋", "#FDCB6E"));
             if (isFavorite)
@@ -133,7 +133,7 @@ namespace MovieRecV5.ViewModels
             ratingPanel.Children.Add(new TextBlock
             {
                 Text = $" ({movie.FormatVoteCount(movie.VoteCount)})",
-                Foreground = new SolidColorBrush(Color.FromRgb(176, 176, 176)), // #B0B0B0
+                Foreground = new SolidColorBrush(Color.FromRgb(148, 163, 184)), // #94A3B8
                 FontSize = 10,
                 Margin = new Thickness(3, 0, 0, 0)
             });
@@ -146,7 +146,7 @@ namespace MovieRecV5.ViewModels
                 var genresText = new TextBlock
                 {
                     Text = string.Join(", ", movie.Genres.Take(2)),
-                    Foreground = new SolidColorBrush(Color.FromRgb(176, 176, 176)), // #B0B0B0
+                    Foreground = new SolidColorBrush(Color.FromRgb(148, 163, 184)), // #94A3B8
                     FontSize = 10,
                     TextAlignment = TextAlignment.Center,
                     TextWrapping = TextWrapping.Wrap,
@@ -217,8 +217,8 @@ namespace MovieRecV5.ViewModels
             var visual = new DrawingVisual();
             using (var context = visual.RenderOpen())
             {
-                context.DrawRectangle(new SolidColorBrush(Color.FromRgb(45, 45, 45)),
-                    new Pen(new SolidColorBrush(Color.FromRgb(90, 90, 90)), 1),
+                context.DrawRectangle(new SolidColorBrush(Color.FromRgb(30, 41, 59)),
+                    new Pen(new SolidColorBrush(Color.FromRgb(71, 85, 105)), 1),
                     new Rect(0, 0, 140, 200));
 
                 var text = new FormattedText(
@@ -227,7 +227,7 @@ namespace MovieRecV5.ViewModels
                     FlowDirection.LeftToRight,
                     new Typeface("Segoe UI"),
                     12,
-                    new SolidColorBrush(Color.FromRgb(176, 176, 176)),
+                    new SolidColorBrush(Color.FromRgb(148, 163, 184)),
                     1.0
                 );
 

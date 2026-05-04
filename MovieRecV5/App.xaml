@@ -4,32 +4,32 @@
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <!-- Цвета -->
-        <SolidColorBrush x:Key="PrimaryColor" Color="#6C5CE7"/>
-        <SolidColorBrush x:Key="PrimaryDarkColor" Color="#5849C4"/>
-        <SolidColorBrush x:Key="AccentColor" Color="#00B894"/>
-        <SolidColorBrush x:Key="BackgroundColor" Color="#0F0F0F"/>
-        <SolidColorBrush x:Key="SurfaceColor" Color="#1E1E1E"/>
+        <SolidColorBrush x:Key="PrimaryColor" Color="#3B82F6"/>
+        <SolidColorBrush x:Key="PrimaryDarkColor" Color="#2563EB"/>
+        <SolidColorBrush x:Key="AccentColor" Color="#06B6D4"/>
+        <SolidColorBrush x:Key="BackgroundColor" Color="#0A0E1A"/>
+        <SolidColorBrush x:Key="SurfaceColor" Color="#111827"/>
         <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="TextSecondary" Color="#B0B0B0"/>
-        <SolidColorBrush x:Key="BorderColor" Color="#2D2D2D"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="#94A3B8"/>
+        <SolidColorBrush x:Key="BorderColor" Color="#1E293B"/>
 
         <!-- Глобальные градиенты -->
         <LinearGradientBrush x:Key="HeaderGradient" StartPoint="0,0" EndPoint="1,0">
-            <GradientStop Color="#6C5CE7" Offset="0"/>
-            <GradientStop Color="#00B894" Offset="1"/>
+            <GradientStop Color="#3B82F6" Offset="0"/>
+            <GradientStop Color="#06B6D4" Offset="1"/>
         </LinearGradientBrush>
 
-        <LinearGradientBrush x:Key="PurpleGradient" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#6C5CE7" Offset="0"/>
-            <GradientStop Color="#A366E7" Offset="1"/>
+        <LinearGradientBrush x:Key="BlueGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#3B82F6" Offset="0"/>
+            <GradientStop Color="#60A5FA" Offset="1"/>
         </LinearGradientBrush>
 
         <!-- Стиль для TextBox -->
         <Style x:Key="ModernTextBox" TargetType="TextBox">
-            <Setter Property="Background" Value="#2D2D2D"/>
+            <Setter Property="Background" Value="#1E293B"/>
             <Setter Property="Foreground" Value="White"/>
             <!-- Явно задаем белый цвет -->
-            <Setter Property="BorderBrush" Value="#404040"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Padding" Value="10,8"/>
@@ -47,10 +47,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="BorderBrush" Value="#6C5CE7"/>
+                                <Setter Property="BorderBrush" Value="#3B82F6"/>
                             </Trigger>
                             <Trigger Property="IsFocused" Value="True">
-                                <Setter Property="BorderBrush" Value="#6C5CE7"/>
+                                <Setter Property="BorderBrush" Value="#3B82F6"/>
                                 <Setter Property="BorderThickness" Value="2"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -61,9 +61,9 @@
 
         <!-- Стиль для PasswordBox -->
         <Style x:Key="ModernPasswordBox" TargetType="PasswordBox">
-            <Setter Property="Background" Value="#2D2D2D"/>
+            <Setter Property="Background" Value="#1E293B"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="#404040"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Padding" Value="10,8"/>
@@ -80,10 +80,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="BorderBrush" Value="#6C5CE7"/>
+                                <Setter Property="BorderBrush" Value="#3B82F6"/>
                             </Trigger>
                             <Trigger Property="IsFocused" Value="True">
-                                <Setter Property="BorderBrush" Value="#6C5CE7"/>
+                                <Setter Property="BorderBrush" Value="#3B82F6"/>
                                 <Setter Property="BorderThickness" Value="2"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -109,7 +109,7 @@
                                     Width="18"
                                     Height="18"
                                     CornerRadius="9"
-                                    BorderBrush="#6C5CE7"
+                                    BorderBrush="#3B82F6"
                                     BorderThickness="2"
                                     Background="Transparent"
                                     Margin="0,0,8,0">
@@ -117,7 +117,7 @@
                                         Width="10"
                                         Height="10"
                                         CornerRadius="5"
-                                        Background="#6C5CE7"
+                                        Background="#3B82F6"
                                         Visibility="Collapsed"/>
                             </Border>
                             <ContentPresenter Grid.Column="1"
@@ -149,13 +149,13 @@
                                     Width="18"
                                     Height="18"
                                     CornerRadius="4"
-                                    BorderBrush="#6C5CE7"
+                                    BorderBrush="#3B82F6"
                                     BorderThickness="2"
                                     Background="Transparent"
                                     Margin="0,0,8,0">
                                 <TextBlock x:Name="CheckMark"
                                            Text="✓"
-                                           Foreground="#6C5CE7"
+                                           Foreground="#3B82F6"
                                            FontSize="14"
                                            FontWeight="Bold"
                                            HorizontalAlignment="Center"
@@ -177,7 +177,7 @@
 
         <!-- Базовый стиль для кнопки действия -->
         <Style x:Key="ActionButton" TargetType="Button">
-            <Setter Property="Background" Value="#6C5CE7"/>
+            <Setter Property="Background" Value="#3B82F6"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
@@ -195,7 +195,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#7C6CE7"/>
+                                <Setter Property="Background" Value="#2563EB"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter Property="Opacity" Value="0.8"/>
@@ -222,7 +222,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#7C6CE7"/>
+                                <Setter Property="Background" Value="#2563EB"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -255,7 +255,7 @@
 
         <!-- Стиль для бейджа статуса -->
         <Style x:Key="StatusBadgeStyle" TargetType="Border">
-            <Setter Property="Background" Value="#2D2D2D"/>
+            <Setter Property="Background" Value="#1E293B"/>
             <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="Padding" Value="8,3"/>
             <Setter Property="Margin" Value="2"/>
@@ -263,8 +263,8 @@
 
         <!-- Стиль для ProgressBar -->
         <Style x:Key="ProgressBarStyle" TargetType="ProgressBar">
-            <Setter Property="Background" Value="#2D2D2D"/>
-            <Setter Property="Foreground" Value="#6C5CE7"/>
+            <Setter Property="Background" Value="#1E293B"/>
+            <Setter Property="Foreground" Value="#3B82F6"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Height" Value="6"/>
             <Setter Property="Template">
