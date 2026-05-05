@@ -475,10 +475,12 @@ namespace MovieRecV5
             bool isInWatchList = CurrentUser != null && _databaseService.IsInWatchList(CurrentUser.Id, movie.Slug);
             bool isWatched = CurrentUser != null && _databaseService.IsMovieWatched(CurrentUser.Id, movie.Slug);
             bool isFavorite = CurrentUser != null && _databaseService.IsInFavorites(CurrentUser.Id, movie.Slug);
+            int? userRating = CurrentUser != null ? _databaseService.GetUserRating(CurrentUser.Id, movie.Slug) : null;
 
             movie.IsWatched = isWatched;
             movie.InWatchList = isInWatchList;
             movie.IsFavorite = isFavorite;
+            movie.UserRating = userRating;
 
             Brush backgroundColor;
             if (isWatched && isInWatchList)
@@ -547,6 +549,8 @@ namespace MovieRecV5
                 statusPanel.Children.Add(CreateStatusBadge("📋", "#FDCB6E"));
             if (isFavorite)
                 statusPanel.Children.Add(CreateStatusBadge("❤️", "#E17055"));
+            if (userRating.HasValue)
+                statusPanel.Children.Add(CreateRatingBadge(userRating.Value));
 
             stackPanel.Children.Add(statusPanel);
 
@@ -609,6 +613,24 @@ namespace MovieRecV5
                     FontSize = 11,
                     FontWeight = FontWeights.Bold,
                     Foreground = Brushes.White
+                }
+            };
+        }
+
+        private Border CreateRatingBadge(int rating)
+        {
+            return new Border
+            {
+                Background = new SolidColorBrush(Color.FromRgb(255, 215, 0)),
+                CornerRadius = new CornerRadius(12),
+                Padding = new Thickness(6, 3, 6, 3),
+                Margin = new Thickness(2),
+                Child = new TextBlock
+                {
+                    Text = $"★{rating}",
+                    FontSize = 11,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = Brushes.Black
                 }
             };
         }

@@ -100,6 +100,7 @@ namespace MovieRecV5.ViewModels
                     tempRating = currentRating;
                     UpdateStarsAppearance();
                     UpdateRatingText();
+                    UpdateSavedRatingVisuals();
                     SubmitRatingButton.IsEnabled = false;
 
                     if (!_isWatched)
@@ -346,6 +347,12 @@ namespace MovieRecV5.ViewModels
                 UpdateStarsAppearance();
                 UpdateRatingText();
                 SubmitRatingButton.IsEnabled = true;
+
+                // Сбрасываем визуал сохраненной оценки при изменении
+                SelectedRatingText.Foreground = new SolidColorBrush(Color.FromRgb(148, 163, 184)); // #94A3B8
+                RatingStatusText.Visibility = Visibility.Collapsed;
+                SubmitRatingButton.Content = "Подтвердить";
+                SubmitRatingButton.Background = new SolidColorBrush(Color.FromRgb(59, 130, 246)); // #3B82F6
             }
         }
 
@@ -418,6 +425,16 @@ namespace MovieRecV5.ViewModels
             SelectedRatingText.Text = $"{currentRating}/10";
         }
 
+        private void UpdateSavedRatingVisuals()
+        {
+            // Показываем золотой цвет для сохраненной оценки
+            SelectedRatingText.Foreground = new SolidColorBrush(Color.FromRgb(255, 215, 0)); // Gold
+            RatingStatusText.Text = "✓ Оценка сохранена";
+            RatingStatusText.Visibility = Visibility.Visible;
+            SubmitRatingButton.Content = "✓ Сохранено";
+            SubmitRatingButton.Background = new SolidColorBrush(Color.FromRgb(22, 163, 74)); // Green
+        }
+
         private void SubmitRatingButton_Click(object sender, RoutedEventArgs e)
         {
             if (_currentUserId <= 0)
@@ -458,6 +475,7 @@ namespace MovieRecV5.ViewModels
 
                 SubmitRatingButton.IsEnabled = false;
                 RefreshMovieRating();
+                UpdateSavedRatingVisuals();
 
                 ShowStatusMessage("✓ Оценка сохранена", false);
             }

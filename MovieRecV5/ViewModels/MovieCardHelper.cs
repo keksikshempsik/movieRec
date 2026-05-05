@@ -18,10 +18,12 @@ namespace MovieRecV5.ViewModels
             bool isInWatchList = dbService.IsInWatchList(userId, movie.Slug);
             bool isWatched = dbService.IsMovieWatched(userId, movie.Slug);
             bool isFavorite = dbService.IsInFavorites(userId, movie.Slug);
+            int? userRating = userId > 0 ? dbService.GetUserRating(userId, movie.Slug) : null;
 
             movie.IsWatched = isWatched;
             movie.InWatchList = isInWatchList;
             movie.IsFavorite = isFavorite;
+            movie.UserRating = userRating;
 
             // Определяем цвет фона в зависимости от статусов
             Brush cardBackground;
@@ -89,6 +91,8 @@ namespace MovieRecV5.ViewModels
                 statusPanel.Children.Add(CreateStatusBadge("📋", "#FDCB6E"));
             if (isFavorite)
                 statusPanel.Children.Add(CreateStatusBadge("❤️", "#E17055"));
+            if (userRating.HasValue)
+                statusPanel.Children.Add(CreateRatingBadge(userRating.Value));
 
             if (statusPanel.Children.Count > 0)
                 stackPanel.Children.Add(statusPanel);
@@ -179,6 +183,27 @@ namespace MovieRecV5.ViewModels
                 FontSize = 11,
                 FontWeight = FontWeights.Bold,
                 Foreground = Brushes.White
+            };
+
+            return border;
+        }
+
+        private static Border CreateRatingBadge(int rating)
+        {
+            var border = new Border
+            {
+                Background = new SolidColorBrush(Color.FromRgb(255, 215, 0)), // Gold
+                CornerRadius = new CornerRadius(12),
+                Padding = new Thickness(6, 3, 6, 3),
+                Margin = new Thickness(2)
+            };
+
+            border.Child = new TextBlock
+            {
+                Text = $"★{rating}",
+                FontSize = 11,
+                FontWeight = FontWeights.Bold,
+                Foreground = Brushes.Black
             };
 
             return border;
